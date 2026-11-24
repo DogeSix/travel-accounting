@@ -1,0 +1,20 @@
+{
+  "name": "好記 HAOJI｜九宮格極簡記帳",
+  "short_name": "好記帳",
+  "description": "極簡傻瓜九宮格記帳 × 出國多幣別即時換算 × 台灣在地支付與旅伴分帳",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ECE8DF",
+  "theme_color": "#ECE8DF",
+  "lang": "zh-TW",
+  "icons": [
+    {
+      "src": "./icons/app-icon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

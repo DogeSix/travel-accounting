@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="zh-TW" data-skin="braun">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="好記帳" />
+  <meta name="theme-color" content="#ECE8DF" id="metaThemeColor" />
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="icon" type="image/svg+xml" href="./icons/app-icon.svg" />
+  <link rel="apple-touch-icon" href="./icons/app-icon.svg" />
+  <title>好記 HAOJI｜九宮格極簡全能記帳</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <!-- Toast Banner with Optional Undo -->
+  <div class="toast-banner" id="toastBanner" role="status" aria-live="polite">
+    <span id="toastText">已記帳！</span>
+    <button type="button" class="toast-undo-btn" id="toastUndoBtn" style="display:none;">復原</button>
+  </div>
+
+  <div class="app-shell">
+    <!-- ==================== TOP HARDWARE BAR ==================== -->
+    <header class="top-status-bar">
+      <button type="button" class="ledger-switcher-btn" id="ledgerSwitchBtn" onclick="HaojiApp.openLedgerModal()" title="切換台灣日常或出國旅遊帳本">
+        <span id="activeLedgerName">台灣日常帳本</span>
+        <span class="ledger-currency-tag num-mono" id="activeLedgerCurrency">TWD</span>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>
+      </button>
+
+      <div class="header-tools">
+        <button type="button" class="icon-keycap-btn" onclick="HaojiApp.openFxConverterModal()" title="出國即時匯率換算器">
+          <span class="num-mono" style="font-size:0.72rem;">匯率</span>
+        </button>
+        <button type="button" class="icon-keycap-btn" onclick="HaojiApp.toggleSound()" id="soundToggleBtn" title="按鍵機械音效開關">
+          <svg id="soundIconSvg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+        </button>
+        <button type="button" class="icon-keycap-btn" onclick="HaojiApp.cycleSkin()" id="skinBtn" title="切換外觀風格（暖石和紙 / 機械墨黑 / 台灣感性）">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 3v18"/><path d="M12 7l5 5"/><path d="M12 12l6 6"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- ==================== POCKET LCD SUMMARY STRIP ==================== -->
+    <section class="summary-lcd-card">
+      <div class="summary-lcd-top">
+        <div class="month-nav-inline">
+          <button type="button" class="month-step-btn" onclick="HaojiApp.shiftMonth(-1)" aria-label="上個月">‹</button>
+          <span class="num-mono" id="currentMonthText">2026 / 11月</span>
+          <button type="button" class="month-step-btn" onclick="HaojiApp.shiftMonth(1)" aria-label="下個月">›</button>
+        </div>
+        <div class="lcd-today-pill num-mono" id="safeDailyText" onclick="HaojiApp.openBudgetModal()" style="cursor:pointer;">
+          今日可花 $0
+        </div>
+      </div>
+
+      <div class="summary-lcd-main">
+        <div>
+          <div style="font-size:0.68rem;font-weight:800;color:var(--lcd-sub);" id="lcdMainLabel">本月總支出 (TWD)</div>
+          <div class="lcd-big-amount num-mono" id="lcdMonthExpense">NT$ 0</div>
+        </div>
+        <div class="lcd-right-meta num-mono">
+          <div id="lcdMonthIncome">收入 +$0</div>
+          <div id="lcdMonthBalance">結餘 $0</div>
+        </div>
+      </div>
+
+      <div class="budget-fuel-wrap" onclick="HaojiApp.openBudgetModal()" title="點擊設定預算上限">
+        <div class="budget-fuel-track">
+          <div class="budget-fuel-fill" id="budgetFuelFill" style="width: 0%;"></div>
+        </div>
+        <div class="budget-fuel-text num-mono" id="budgetFuelText">設定預算 ✎</div>
+      </div>
+    </section>
+
+    <!-- ==================== VIEW 1: 九宮格極簡傻瓜記帳 ==================== -->
+    <main id="view-home" class="view-panel active">
+      <!-- Reference-Homage Twin Top Pill Buttons -->
+      <div class="twin-action-row">
+        <button type="button" class="twin-pill-outer" onclick="HaojiApp.openPresetsModal()">
+          <span class="corner-hot-ribbon">秒記</span>
+          <div class="twin-pill-inner coral">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            <span>常用・固定帳</span>
+          </div>
+        </button>
+
+        <button type="button" class="twin-pill-outer" onclick="HaojiApp.switchView('history')">
+          <div class="twin-pill-inner stone">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16l4-2 4 2 4-2 4 2V8z"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="13" y2="14"/></svg>
+            <span>收支紀錄</span>
+            <span class="pill-count-badge num-mono" id="homeRecordCountBadge">0</span>
+          </div>
+        </button>
+      </div>
+
+      <!-- Mode Rocker (支出 / 收入 / 轉帳) + Grid Size Toggle (3x3 九宮格 / 2x2 超大格) -->
+      <div class="grid-control-strip">
+        <div class="rocker-switch" role="tablist">
+          <button type="button" class="rocker-btn active" data-type="expense" onclick="HaojiApp.setGridMode('expense')">支出</button>
+          <button type="button" class="rocker-btn" data-type="income" onclick="HaojiApp.setGridMode('income')">收入</button>
+          <button type="button" class="rocker-btn" data-type="transfer" onclick="HaojiApp.setGridMode('transfer')">轉帳/換匯</button>
+        </div>
+
+        <div style="display:flex;gap:6px;">
+          <button type="button" class="density-toggle-btn" onclick="HaojiApp.openCustomCatModal()" title="新增或管理自訂分類">
+            <span>＋分類</span>
+          </button>
+          <button type="button" class="density-toggle-btn" id="gridDensityBtn" onclick="HaojiApp.toggleGridDensity()">
+            <span id="gridDensityLabel">大格 2×2</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- THE ICONIC TACTILE BUTTON GRID -->
+      <div class="category-grid" id="categoryGrid"></div>
+    </main>
+
+    <!-- ==================== VIEW 2: 明細・月曆・統一發票對獎 ==================== -->
+    <section id="view-history" class="view-panel">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:11px;gap:8px;flex-wrap:wrap;">
+        <div class="subview-tabs">
+          <button type="button" class="subview-tab active" data-sub="list" onclick="HaojiApp.switchHistorySub('list')">感熱紙明細</button>
+          <button type="button" class="subview-tab" data-sub="calendar" onclick="HaojiApp.switchHistorySub('calendar')">收支月曆</button>
+          <button type="button" class="subview-tab" data-sub="invoice" onclick="HaojiApp.switchHistorySub('invoice')">發票對獎</button>
+        </div>
+        <button type="button" class="density-toggle-btn" onclick="HaojiApp.exportCSV()">匯出 Excel</button>
+      </div>
+
+      <!-- Subview A: Receipt Timeline List -->
+      <div id="histSubList">
+        <div class="search-input-wrap">
+          <input type="search" id="historySearchInput" class="search-box" placeholder="搜尋品項、備註、分類、發票末三碼..." oninput="HaojiApp.renderHistory()" />
+        </div>
+        <div class="filter-bar" id="historyFilterBar"></div>
+        <div id="receiptTimelineContainer"></div>
+      </div>
+
+      <!-- Subview B: Interactive Monthly Calendar -->
+      <div id="histSubCalendar" style="display:none;">
+        <div class="section-card">
+          <div class="cal-weekdays">
+            <span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span>
+          </div>
+          <div class="cal-grid" id="calendarGrid"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <span style="font-size:0.86rem;font-weight:900;" id="selectedCalDateLabel">當日明細</span>
+          <button type="button" class="density-toggle-btn" onclick="HaojiApp.quickAddOnSelectedDate()">＋補記這天</button>
+        </div>
+        <div id="calendarDayList"></div>
+      </div>
+
+      <!-- Subview C: Taiwan Uniform Invoice Prize Checker -->
+      <div id="histSubInvoice" style="display:none;">
+        <div class="section-card">
+          <div class="section-header">
+            <div class="section-title">台灣統一發票極速對獎</div>
+            <button type="button" class="density-toggle-btn" onclick="HaojiApp.checkAllLedgerInvoices()">比對帳本發票</button>
+          </div>
+          <p style="font-size:0.78rem;color:var(--ink-secondary);margin-bottom:10px;font-weight:700;">
+            可設定當期開獎末三碼（含頭獎、增開六獎），記帳時輸入發票末3碼即可自動對獎，也可在下方直接敲末3碼快速對紙本發票！
+          </p>
+          <div class="form-field">
+            <label>當期中獎末三碼組（以空白或逗號分隔，如：809, 542, 168, 991, 307）</label>
+            <input type="text" id="winningCodesInput" class="form-input num-mono" value="809, 542, 168, 991, 307" onchange="HaojiApp.saveWinningCodes()" />
+          </div>
+          <div style="background:var(--lcd-bg);border:2px solid var(--lcd-border);border-radius:14px;padding:12px;text-align:center;margin-top:8px;">
+            <div style="font-size:0.76rem;font-weight:800;color:var(--lcd-sub);">手邊紙本發票快速輸入末 3 碼即刻開獎</div>
+            <input type="tel" maxlength="3" id="manualInvoiceCheckInput" class="form-input num-mono" placeholder="輸入3碼 如 168" style="text-align:center;font-size:1.5rem;margin:8px 0;letter-spacing:0.2em;" oninput="HaojiApp.onManualInvoiceInput(this.value)" />
+            <div id="manualInvoiceResult" style="font-size:0.92rem;font-weight:900;color:var(--lcd-ink);min-height:24px;">等待輸入末 3 碼...</div>
+          </div>
+          <div id="ledgerInvoiceMatchList" style="margin-top:12px;"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== VIEW 3: 圖表分析・外幣統計・旅伴AA結算 ==================== -->
+    <section id="view-analytics" class="view-panel">
+      <!-- Category Donut + Ranking -->
+      <div class="section-card">
+        <div class="section-header">
+          <div class="section-title">支出分類佔比</div>
+          <span class="num-mono" style="font-size:0.78rem;font-weight:800;color:var(--ink-secondary);" id="analyticsMonthTag"></span>
+        </div>
+        <div class="donut-layout">
+          <div class="donut-svg-wrap">
+            <svg viewBox="0 0 120 120" width="132" height="132" id="donutSvg"></svg>
+            <div class="donut-center-label">
+              <span style="font-size:0.65rem;font-weight:800;color:var(--ink-muted);">總支出</span>
+              <span class="num-mono" style="font-size:0.88rem;font-weight:900;" id="donutCenterAmt">$0</span>
+            </div>
+          </div>
+          <div style="flex:1;min-width:0;" id="top3SummaryBox"></div>
+        </div>
+        <div class="cat-rank-list" id="catRankList"></div>
+      </div>
+
+      <!-- Daily Trend Chart -->
+      <div class="section-card">
+        <div class="section-header">
+          <div class="section-title">每日消費波動趨勢</div>
+          <span class="num-mono" style="font-size:0.75rem;color:var(--ink-muted);" id="dailyAvgLabel">日均 $0</span>
+        </div>
+        <div class="trend-bars-wrap" id="dailyTrendBars"></div>
+      </div>
+
+      <!-- Travel Multi-Currency Summary -->
+      <div class="section-card" id="fxAnalyticsCard">
+        <div class="section-header">
+          <div class="section-title">各國幣別＆支付通道統計</div>
+        </div>
+        <div id="fxAndPaymentBreakdown"></div>
+      </div>
+
+      <!-- Travel Buddy AA Split & Advance Settlement -->
+      <div class="section-card">
+        <div class="section-header">
+          <div class="section-title">旅伴 AA 分帳／代墊結算單</div>
+          <button type="button" class="density-toggle-btn" onclick="HaojiApp.copyLineSplitSummary()">複製到 LINE</button>
+        </div>
+        <div id="aaSettlementContainer"></div>
+      </div>
+    </section>
+
+    <!-- ==================== VIEW 4: 多帳戶資產・出國帳本・GitHub離線備份 ==================== -->
+    <section id="view-accounts" class="view-panel">
+      <!-- Net Worth & Accounts -->
+      <div class="section-card">
+        <div class="section-header">
+          <div>
+            <div class="section-title">總淨資產與帳戶餘額</div>
+            <div style="font-size:0.73rem;color:var(--ink-muted);font-weight:700;">記帳與轉帳自動連動各帳戶餘額</div>
+          </div>
+          <button type="button" class="density-toggle-btn" onclick="HaojiApp.openAddAccountModal()">＋新增帳戶</button>
+        </div>
+        <div style="background:var(--lcd-bg);border:2px solid var(--lcd-border);border-radius:14px;padding:11px 13px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:baseline;">
+          <span style="font-size:0.8rem;font-weight:800;color:var(--lcd-sub);">目前淨資產總計</span>
+          <span class="num-mono" style="font-size:1.45rem;font-weight:900;color:var(--lcd-ink);" id="netWorthDisplay">NT$ 0</span>
+        </div>
+        <div class="account-list" id="accountListContainer"></div>
+      </div>
+
+      <!-- Multi-Ledger Manager -->
+      <div class="section-card">
+        <div class="section-header">
+          <div class="section-title">日常＆出國旅遊獨立帳本</div>
+          <button type="button" class="density-toggle-btn" onclick="HaojiApp.openLedgerModal()">管理／新增帳本</button>
+        </div>
+        <p style="font-size:0.78rem;color:var(--ink-secondary);font-weight:700;margin-bottom:10px;">
+          出國時切換至「日本／韓國／歐美旅遊帳本」，算盤會自動預設當地外幣並折算台幣，不與台灣日常帳混雜！
+        </p>
+        <div id="ledgerQuickList" style="display:flex;flex-wrap:wrap;gap:7px;"></div>
+      </div>
+
+      <!-- Backup, Export, PWA Install Guide -->
+      <div class="section-card">
+        <div class="section-header">
+          <div class="section-title">備份匯出＆出國手機安裝</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
+          <button type="button" class="action-btn primary" onclick="HaojiApp.exportJSON()">下載完整備份 (.json)</button>
+          <button type="button" class="action-btn" onclick="document.getElementById('importJsonFile').click()">匯入還原備份</button>
+          <button type="button" class="action-btn" onclick="HaojiApp.exportCSV()">匯出 Excel (.csv)</button>
+          <button type="button" class="action-btn" onclick="HaojiApp.shareBackupNative()">手機分享備份至 LINE</button>
+        </div>
+        <input type="file" id="importJsonFile" accept=".json,application/json" style="display:none;" onchange="HaojiApp.importJSON(event)" />
+
+        <div style="background:var(--surface-sunken);border:1.5px solid var(--border-ink);border-radius:14px;padding:12px;font-size:0.78rem;line-height:1.55;font-weight:700;color:var(--ink-secondary);margin-bottom:10px;">
+          <strong style="color:var(--ink-primary);display:block;margin-bottom:4px;">📱 出國手機滿版離線 App 安裝步驟：</strong>
+          1. 將本資料夾上傳至 GitHub 並開啟 <strong>Settings → Pages</strong> 取得網址。<br/>
+          2. iPhone 用 Safari 開啟網址 → 點底部「分享」→ 選<strong>「加入主畫面」</strong>。<br/>
+          3. Android 用 Chrome 開啟網址 → 點右上選單 → 選<strong>「安裝應用程式」</strong>。<br/>
+          ✓ 內建離線快取引擎，出國搭飛機、地鐵沒訊號也能秒開記帳！
+        </div>
+
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button type="button" class="density-toggle-btn" onclick="HaojiApp.loadDemoData()">載入台灣＋日本旅遊範例資料</button>
+          <button type="button" class="density-toggle-btn" style="color:var(--danger-red);" onclick="HaojiApp.resetCurrentLedger()">清空目前帳本紀錄</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== BOTTOM 4-TAB HARDWARE DOCK ==================== -->
+    <nav class="bottom-dock" aria-label="主導覽列">
+      <button type="button" class="dock-btn active" data-view="home" onclick="HaojiApp.switchView('home')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+        <span>九宮格記帳</span>
+      </button>
+      <button type="button" class="dock-btn" data-view="history" onclick="HaojiApp.switchView('history')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16l4-2 4 2 4-2 4 2V8z"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="13" y2="14"/></svg>
+        <span>明細・月曆</span>
+      </button>
+      <button type="button" class="dock-btn" data-view="analytics" onclick="HaojiApp.switchView('analytics')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
+        <span>圖表・分帳</span>
+      </button>
+      <button type="button" class="dock-btn" data-view="accounts" onclick="HaojiApp.switchView('accounts')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="3"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+        <span>帳戶・出國</span>
+      </button>
+    </nav>
+  </div>
+
+  <!-- ==================== HARDWARE CALCULATOR INPUT SHEET ==================== -->
+  <div class="sheet-backdrop" id="calcBackdrop" onclick="HaojiApp.closeCalcSheet()"></div>
+  <section class="calc-sheet" id="calcSheet" aria-label="輸入金額算盤">
+    <div class="sheet-grabber"></div>
+
+    <div class="calc-header-row">
+      <div class="calc-cat-badge" id="calcCatBadge">
+        <div class="calc-cat-dot" id="calcCatDot"></div>
+        <span class="calc-cat-name" id="calcCatName">餐飲美食</span>
+      </div>
+
+      <div class="calc-date-controls">
+        <button type="button" class="mini-pill" onclick="HaojiApp.setCalcYesterday()" title="快速切換昨天">昨天</button>
+        <input type="date" id="calcDateInput" class="date-chip-input num-mono" />
+        <button type="button" class="close-sheet-btn" onclick="HaojiApp.closeCalcSheet()" aria-label="關閉">✕</button>
+      </div>
+    </div>
+
+    <!-- Transfer From -> To Selector (Only shown in Transfer Mode) -->
+    <div id="transferAccountRow" style="display:none;gap:6px;align-items:center;margin-bottom:9px;">
+      <select id="transferFromSelect" class="form-select" style="padding:7px 9px;font-size:0.82rem;"></select>
+      <span style="font-weight:900;color:var(--signal-accent);">➔</span>
+      <select id="transferToSelect" class="form-select" style="padding:7px 9px;font-size:0.82rem;"></select>
+    </div>
+
+    <!-- Reflective Calculator LCD Readout -->
+    <div class="calc-lcd-box">
+      <div class="calc-lcd-upper">
+        <select id="calcCurrencySelect" class="currency-select-pill num-mono" onchange="HaojiApp.onCalcCurrencyChange()">
+          <option value="TWD">NT$ 台幣 (TWD)</option>
+          <option value="JPY">¥ 日圓 (JPY)</option>
+          <option value="KRW">₩ 韓元 (KRW)</option>
+          <option value="THB">฿ 泰銖 (THB)</option>
+          <option value="USD">$ 美金 (USD)</option>
+          <option value="EUR">€ 歐元 (EUR)</option>
+          <option value="HKD">HK$ 港幣 (HKD)</option>
+          <option value="CNY">¥ 人民幣 (CNY)</option>
+          <option value="SGD">S$ 新幣 (SGD)</option>
+          <option value="VND">₫ 越南盾 (VND)</option>
+        </select>
+        <div class="calc-expr-preview num-mono" id="calcExprPreview"></div>
+      </div>
+
+      <div class="calc-lcd-digits num-mono" id="calcDigitsDisplay">0</div>
+
+      <!-- Foreign Exchange Live Bar (Shown automatically when Currency != TWD) -->
+      <div class="fx-live-bar" id="calcFxBar" style="display:none;">
+        <div>
+          <span class="num-mono" id="calcFxRateLabel">1 JPY = 0.215 TWD</span>
+          <button type="button" class="fx-rate-edit-btn" onclick="HaojiApp.promptCustomRate()">改匯率</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <button type="button" class="fx-fee-toggle num-mono" id="fxFeeBtn" onclick="HaojiApp.toggleFxFee()">+1.5%刷卡費</button>
+          <span class="num-mono" style="color:var(--lcd-ink);font-size:0.84rem;" id="calcTwdConverted">≈ NT$ 0</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Zero-Typing Sub-Tag Quick Chips -->
+    <div class="quick-tags-strip" id="calcQuickTags"></div>
+
+    <!-- Note + AA Split Toggle -->
+    <div class="note-and-split-row">
+      <input type="text" id="calcNoteInput" class="note-input" placeholder="免打字點上方標籤，或輸入備註..." />
+      <button type="button" class="split-toggle-btn" id="calcSplitToggleBtn" onclick="HaojiApp.toggleSplitPanel()">👥 分帳/代墊</button>
+    </div>
+
+    <!-- Expandable AA Split / Buddy Advance Config -->
+    <div class="split-config-panel" id="calcSplitPanel">
+      <button type="button" class="mini-pill active" data-split="none" onclick="HaojiApp.setSplitMode('none')">個人消費</button>
+      <button type="button" class="mini-pill" data-split="aa2" onclick="HaojiApp.setSplitMode('aa2')">AA平分÷2</button>
+      <button type="button" class="mini-pill" data-split="aa3" onclick="HaojiApp.setSplitMode('aa3')">AA÷3</button>
+      <button type="button" class="mini-pill" data-split="aa4" onclick="HaojiApp.setSplitMode('aa4')">AA÷4</button>
+      <button type="button" class="mini-pill" data-split="advance" onclick="HaojiApp.setSplitMode('advance')">幫人代買100%</button>
+      <input type="text" id="splitBuddyInput" class="form-input" placeholder="旅伴/對象名稱（如：阿明、老婆）" style="padding:5px 9px;font-size:0.78rem;margin-top:4px;" />
+    </div>
+
+    <!-- Payment Account Strip (Hidden in Transfer Mode) -->
+    <div class="pay-method-strip" id="calcAccountStrip"></div>
+
+    <!-- Optional Extra Micro Tools: Invoice 3-digits + Photo Receipt + Delete when editing -->
+    <div class="extra-tools-strip">
+      <div style="display:flex;align-items:center;gap:6px;">
+        <input type="tel" maxlength="3" id="calcInvoiceInput" class="date-chip-input num-mono" placeholder="發票末3碼" style="width:88px;padding:4px 8px;font-size:0.74rem;" />
+        <label class="micro-tool-btn" style="margin:0;">
+          <span>📷 收據照</span>
+          <input type="file" id="calcPhotoInput" accept="image/*" style="display:none;" onchange="HaojiApp.handleReceiptPhoto(event)" />
+        </label>
+        <img id="calcPhotoPreview" class="receipt-thumb-preview" style="display:none;" alt="收據預覽" onclick="HaojiApp.clearReceiptPhoto()" title="點擊移除照片" />
+      </div>
+      <button type="button" id="calcDeleteBtn" class="micro-tool-btn" style="display:none;color:var(--danger-red);border-color:var(--danger-red);" onclick="HaojiApp.deleteEditingTx()">刪除此筆</button>
+    </div>
+
+    <!-- 4x4 Mechanical Numpad -->
+    <div class="numpad-grid">
+      <button type="button" class="num-key num-mono" onclick="HaojiApp.pressKey('7')">7</button>
+      <button type="button" class="num-key num-mono" onclick="HaojiApp.pressKey('8')">8</button>
+      <button type="button" class="num-key num-mono" onclick="HaojiApp.pressKey('9')">9</button>
+      <button type="button" class="num-key op-key num-mono" onclick="HaojiApp.pressKey('/')">÷</button>
+
+      <button type="button" class="num-key num-mono" onclick="HaojiApp.pressKey('4')">4</button>
+      <button type="button" class="num-key num-mono" onclick="HaojiApp.pressKey('5')">5</button>
+      <button type="button" class="num-key num-mono" onclick="HaojiApp.pressKey('6')">6</button>
+      <button type="button" class="num-key op-key num-mono" onclick="HaojiApp.pressKey('*')">×</button>
+
+      <button type="button" class="num-key num-mono" onclick="HaojiApp.pressKey('1')">1</button>
+      <button type="button" class="num-key num-mono" onclick="HaojiApp.pressKey('2')">2</button>
+      <button type="button" class="num-key num-mono" onclick="HaojiApp.pressKey('3')">3</button>
+      <button type="button" class="num-key op-key num-mono" onclick="HaojiApp.pressKey('-')">−</button>
+
+      <button type="button" class="num-key num-mono" onclick="HaojiApp.pressKey('.')">.</button>
+      <button type="button" class="num-key num-mono" onclick="HaojiApp.pressKey('0')">0</button>
+      <button type="button" class="num-key op-key" onclick="HaojiApp.pressKey('BACK')" ondblclick="HaojiApp.pressKey('CLEAR')" title="點擊退格，連點清空">⌫</button>
+      <button type="button" class="num-key op-key num-mono" onclick="HaojiApp.pressKey('+')">＋</button>
+    </div>
+
+    <button type="button" class="submit-save-btn" id="calcSubmitBtn" onclick="HaojiApp.submitCalc()">
+      <span id="calcSubmitLabel">完成記帳</span>
+    </button>
+  </section>
+
+  <!-- ==================== UNIVERSAL MODAL OVERLAY ==================== -->
+  <div class="modal-overlay" id="universalModal" onclick="if(event.target===this)HaojiApp.closeModal()">
+    <div class="modal-card" id="universalModalBody"></div>
+  </div>
+
+  <script src="./app.js"></script>
+</body>
+</html>

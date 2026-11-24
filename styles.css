@@ -1,0 +1,1666 @@
+/* ==========================================================================
+   好記 HAOJI — 九宮格極簡記帳
+   Art Direction: Braun ET66 Tactile Hardware × KOKUYO Stationery × 台灣感性
+   Zero Generic AI Gradients · Physical Keycap Mechanics · Custom Vector System
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@600;700;800&family=Noto+Sans+TC:wght@500;700;900&family=Space+Grotesk:wght@600;700&display=swap');
+
+:root,
+[data-skin="braun"] {
+  --chassis-bg: #ECE8DF;
+  --chassis-dot: rgba(35, 31, 26, 0.065);
+  --surface-card: #FAF8F4;
+  --surface-elevated: #FFFFFF;
+  --surface-subtle: #E3DECFE6;
+  --surface-sunken: #E2DDD2;
+  --border-ink: #D4CEC0;
+  --border-strong: #B9B1A0;
+  --keycap-lip: #C9C1B1;
+  --keycap-shadow: rgba(36, 31, 24, 0.07);
+
+  --ink-primary: #1F1D1A;
+  --ink-secondary: #635D53;
+  --ink-muted: #918A7E;
+  --ink-on-accent: #FFFFFF;
+
+  --pill-coral: #E66857;
+  --pill-coral-lip: #C34B3B;
+  --pill-stone: #8F9497;
+  --pill-stone-lip: #6E7376;
+  --badge-gold: #ECA73E;
+  --badge-gold-ink: #FFFFFF;
+
+  --signal-accent: #E2552D;
+  --signal-accent-lip: #B63B18;
+  --jade-income: #217A5D;
+  --jade-income-bg: rgba(33, 122, 93, 0.12);
+  --danger-red: #D6453A;
+
+  /* Authentic Reflective Pocket Calculator LCD */
+  --lcd-bg: #DCE3D3;
+  --lcd-border: #B3BCA8;
+  --lcd-ink: #182117;
+  --lcd-sub: #4B5948;
+
+  --numpad-key: #FAF8F4;
+  --numpad-op: #EFECE4;
+  --sheet-backdrop: rgba(24, 21, 17, 0.48);
+}
+
+/* Skin 2: Teenage Engineering / Matte Anodized Hardware Black */
+[data-skin="opdark"] {
+  --chassis-bg: #161614;
+  --chassis-dot: rgba(255, 255, 245, 0.045);
+  --surface-card: #232320;
+  --surface-elevated: #2B2B27;
+  --surface-subtle: #2E2E2A;
+  --surface-sunken: #11110F;
+  --border-ink: #353530;
+  --border-strong: #4A4A43;
+  --keycap-lip: #0C0C0B;
+  --keycap-shadow: rgba(0, 0, 0, 0.42);
+
+  --ink-primary: #F3EFE6;
+  --ink-secondary: #A8A296;
+  --ink-muted: #6F6B62;
+  --ink-on-accent: #FFFFFF;
+
+  --pill-coral: #E55A34;
+  --pill-coral-lip: #A6381A;
+  --pill-stone: #434542;
+  --pill-stone-lip: #282927;
+  --badge-gold: #F2AD36;
+  --badge-gold-ink: #191815;
+
+  --signal-accent: #FF5D2A;
+  --signal-accent-lip: #BD3910;
+  --jade-income: #34B385;
+  --jade-income-bg: rgba(52, 179, 133, 0.16);
+  --danger-red: #F0584B;
+
+  --lcd-bg: #111712;
+  --lcd-border: #2F3B31;
+  --lcd-ink: #E5F2DC;
+  --lcd-sub: #8CA685;
+
+  --numpad-key: #272724;
+  --numpad-op: #1E1E1B;
+  --sheet-backdrop: rgba(0, 0, 0, 0.72);
+}
+
+/* Skin 3: 台灣感性・海棠郵政綠 × 復古存摺紙 */
+[data-skin="taiwan"] {
+  --chassis-bg: #F2EBDD;
+  --chassis-dot: rgba(28, 94, 75, 0.065);
+  --surface-card: #FFFDF8;
+  --surface-elevated: #FFFFFF;
+  --surface-subtle: #E8DFCE;
+  --surface-sunken: #E5DBC8;
+  --border-ink: #D2C5AE;
+  --border-strong: #B5A489;
+  --keycap-lip: #C3B49B;
+  --keycap-shadow: rgba(52, 38, 20, 0.08);
+
+  --ink-primary: #212623;
+  --ink-secondary: #5B635D;
+  --ink-muted: #8B8E85;
+  --ink-on-accent: #FFFFFF;
+
+  --pill-coral: #D65745;
+  --pill-coral-lip: #A93A2B;
+  --pill-stone: #2B6E59;
+  --pill-stone-lip: #1B4B3C;
+  --badge-gold: #E8A030;
+  --badge-gold-ink: #FFFFFF;
+
+  --signal-accent: #1F6B54;
+  --signal-accent-lip: #124737;
+  --jade-income: #1F6B54;
+  --jade-income-bg: rgba(31, 107, 84, 0.12);
+  --danger-red: #C94333;
+
+  --lcd-bg: #E4E9DC;
+  --lcd-border: #B2BFA8;
+  --lcd-ink: #19261E;
+  --lcd-sub: #4C6153;
+
+  --numpad-key: #FFFDF8;
+  --numpad-op: #EFE7D6;
+  --sheet-backdrop: rgba(26, 23, 18, 0.5);
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+  height: 100%;
+  font-family: "Noto Sans TC", -apple-system, BlinkMacSystemFont, "PingFang TC", sans-serif;
+  background-color: var(--chassis-bg);
+  background-image: radial-gradient(var(--chassis-dot) 1.15px, transparent 1.15px);
+  background-size: 16px 16px;
+  color: var(--ink-primary);
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+}
+
+input, textarea, select {
+  user-select: text;
+  font-family: inherit;
+}
+
+.num-mono {
+  font-family: "Space Grotesk", "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+/* ======================== APP HARDWARE CHASSIS ======================== */
+.app-shell {
+  max-width: 460px;
+  min-height: 100vh;
+  min-height: 100dvh;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  padding: calc(env(safe-area-inset-top, 0px) + 10px) 14px calc(env(safe-area-inset-bottom, 0px) + 84px);
+  position: relative;
+}
+
+@media (min-width: 520px) {
+  body {
+    padding: 18px 0;
+  }
+  .app-shell {
+    min-height: calc(100dvh - 36px);
+    border-radius: 34px;
+    border: 2px solid var(--border-strong);
+    background-color: var(--chassis-bg);
+    background-image: radial-gradient(var(--chassis-dot) 1.15px, transparent 1.15px);
+    background-size: 16px 16px;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.16), 0 6px 0 var(--keycap-lip);
+  }
+}
+
+/* ======================== TOP COMPACT STATUS HEADER ======================== */
+.top-status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.ledger-switcher-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: var(--surface-card);
+  color: var(--ink-primary);
+  border: 1.5px solid var(--border-ink);
+  box-shadow: 0 3px 0 var(--keycap-lip);
+  border-radius: 999px;
+  padding: 7px 13px;
+  font-size: 0.88rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+}
+
+.ledger-switcher-btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 var(--keycap-lip);
+}
+
+.ledger-currency-tag {
+  background: var(--signal-accent);
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 6px;
+  letter-spacing: 0.03em;
+}
+
+.header-tools {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.icon-keycap-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: var(--surface-card);
+  color: var(--ink-primary);
+  border: 1.5px solid var(--border-ink);
+  box-shadow: 0 3px 0 var(--keycap-lip);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-weight: 800;
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+}
+
+.icon-keycap-btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 var(--keycap-lip);
+}
+
+/* ======================== LCD SUMMARY READOUT STRIP ======================== */
+.summary-lcd-card {
+  background: var(--lcd-bg);
+  border: 2px solid var(--lcd-border);
+  border-radius: 18px;
+  padding: 11px 14px;
+  margin-bottom: 12px;
+  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.09);
+  position: relative;
+}
+
+.summary-lcd-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.month-nav-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--lcd-sub);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.month-step-btn {
+  background: rgba(0, 0, 0, 0.07);
+  color: var(--lcd-ink);
+  border: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  font-weight: 900;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+[data-skin="opdark"] .month-step-btn {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.lcd-today-pill {
+  font-size: 0.73rem;
+  font-weight: 700;
+  color: var(--lcd-sub);
+}
+
+.summary-lcd-main {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-top: 3px;
+}
+
+.lcd-big-amount {
+  font-size: 1.72rem;
+  font-weight: 800;
+  color: var(--lcd-ink);
+  line-height: 1.1;
+}
+
+.lcd-right-meta {
+  text-align: right;
+  font-size: 0.74rem;
+  color: var(--lcd-sub);
+  font-weight: 700;
+}
+
+/* MOZE-Inspired Budget Fuel Gauge */
+.budget-fuel-wrap {
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.budget-fuel-track {
+  flex: 1;
+  height: 7px;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+[data-skin="opdark"] .budget-fuel-track {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.budget-fuel-fill {
+  height: 100%;
+  border-radius: 99px;
+  background: var(--lcd-ink);
+  transition: width 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.budget-fuel-fill.warn {
+  background: #D9822B;
+}
+
+.budget-fuel-fill.over {
+  background: var(--danger-red);
+}
+
+.budget-fuel-text {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--lcd-sub);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+/* ======================== REFERENCE-HOMAGE DUAL TOP PILL BUTTONS ======================== */
+.twin-action-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 11px;
+  margin-bottom: 13px;
+}
+
+.twin-pill-outer {
+  position: relative;
+  background: var(--surface-elevated);
+  padding: 3.5px;
+  border-radius: 17px;
+  border: 1.5px solid var(--border-ink);
+  box-shadow: 0 4px 0 var(--keycap-lip), 0 6px 14px var(--keycap-shadow);
+  cursor: pointer;
+  transition: transform 0.09s ease, box-shadow 0.09s ease;
+  text-align: left;
+}
+
+.twin-pill-outer:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 var(--keycap-lip);
+}
+
+.twin-pill-inner {
+  height: 48px;
+  border-radius: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  font-size: 0.96rem;
+  font-weight: 800;
+  color: #FFFFFF;
+  letter-spacing: 0.02em;
+  padding: 0 10px;
+}
+
+.twin-pill-inner.coral {
+  background: var(--pill-coral);
+}
+
+.twin-pill-inner.stone {
+  background: var(--pill-stone);
+}
+
+.corner-hot-ribbon {
+  position: absolute;
+  top: -5px;
+  left: -3px;
+  background: var(--badge-gold);
+  color: var(--badge-gold-ink);
+  font-size: 0.65rem;
+  font-weight: 900;
+  padding: 2px 8px;
+  border-radius: 8px 8px 8px 2px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.16);
+  letter-spacing: 0.04em;
+  z-index: 2;
+}
+
+.pill-count-badge {
+  background: rgba(255, 255, 255, 0.24);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 1px 7px;
+  border-radius: 99px;
+}
+
+/* ======================== GRID TOOLBAR (EXPENSE/INCOME & 9-GRID / BIG-6) ======================== */
+.grid-control-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.rocker-switch {
+  display: inline-flex;
+  background: var(--surface-sunken);
+  padding: 3px;
+  border-radius: 12px;
+  border: 1.5px solid var(--border-ink);
+}
+
+.rocker-btn {
+  border: none;
+  background: transparent;
+  color: var(--ink-secondary);
+  font-size: 0.82rem;
+  font-weight: 800;
+  padding: 5px 14px;
+  border-radius: 9px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.rocker-btn.active {
+  background: var(--surface-card);
+  color: var(--ink-primary);
+  box-shadow: 0 2px 0 var(--keycap-lip);
+}
+
+.rocker-btn.active[data-type="income"] {
+  color: var(--jade-income);
+}
+
+.density-toggle-btn {
+  border: 1.5px solid var(--border-ink);
+  background: var(--surface-card);
+  color: var(--ink-secondary);
+  font-size: 0.76rem;
+  font-weight: 800;
+  padding: 5px 10px;
+  border-radius: 10px;
+  box-shadow: 0 2px 0 var(--keycap-lip);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.density-toggle-btn:active {
+  transform: translateY(2px);
+  box-shadow: none;
+}
+
+/* ======================== ICONIC TACTILE CATEGORY GRID (九宮格 & 超大雙欄格) ======================== */
+.category-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 11px;
+}
+
+/* Foolproof 2-Column Giant Card Mode (Exact proportion of reference image!) */
+.category-grid.grid-2col {
+  grid-template-columns: repeat(2, 1fr);
+  gap: 13px;
+}
+
+.cat-tile {
+  background: var(--surface-card);
+  border: 1.5px solid var(--border-ink);
+  border-radius: 22px;
+  padding: 14px 8px 11px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  position: relative;
+  box-shadow: 0 5px 0 var(--keycap-lip), 0 8px 16px var(--keycap-shadow);
+  transition: transform 0.08s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.08s cubic-bezier(0.2, 0, 0, 1), border-color 0.15s ease;
+}
+
+.category-grid.grid-2col .cat-tile {
+  padding: 20px 12px 16px;
+  border-radius: 24px;
+  gap: 11px;
+}
+
+.cat-tile:hover {
+  border-color: var(--border-strong);
+}
+
+.cat-tile:active {
+  transform: translateY(4px);
+  box-shadow: 0 1px 0 var(--keycap-lip), 0 2px 5px var(--keycap-shadow);
+}
+
+.cat-medallion {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #FFFFFF;
+  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.14), 0 4px 10px rgba(0, 0, 0, 0.08);
+  flex-shrink: 0;
+  transition: transform 0.15s ease;
+}
+
+.category-grid.grid-2col .cat-medallion {
+  width: 88px;
+  height: 88px;
+}
+
+.cat-medallion svg {
+  width: 34px;
+  height: 34px;
+}
+
+.category-grid.grid-2col .cat-medallion svg {
+  width: 46px;
+  height: 46px;
+}
+
+.cat-title {
+  font-size: 0.92rem;
+  font-weight: 800;
+  color: var(--ink-primary);
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.category-grid.grid-2col .cat-title {
+  font-size: 1.06rem;
+}
+
+.cat-subtotal {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--ink-muted);
+  background: var(--surface-sunken);
+  padding: 2px 8px;
+  border-radius: 99px;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cat-subtotal.has-val {
+  color: var(--ink-secondary);
+  font-weight: 800;
+}
+
+/* ======================== BOTTOM DOCK NAVIGATION ======================== */
+.bottom-dock {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 10px);
+  width: calc(100% - 28px);
+  max-width: 432px;
+  background: var(--surface-card);
+  border: 1.5px solid var(--border-strong);
+  border-radius: 20px;
+  padding: 5px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  box-shadow: 0 5px 0 var(--keycap-lip), 0 12px 28px rgba(0, 0, 0, 0.16);
+  z-index: 40;
+}
+
+.dock-btn {
+  border: none;
+  background: transparent;
+  color: var(--ink-muted);
+  border-radius: 14px;
+  padding: 7px 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.14s ease;
+}
+
+.dock-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+.dock-btn.active {
+  background: var(--ink-primary);
+  color: var(--surface-card);
+}
+
+/* ======================== VIEW PANELS ======================== */
+.view-panel {
+  display: none;
+  animation: fadeSlideUp 0.18s ease-out;
+}
+
+.view-panel.active {
+  display: block;
+}
+
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ======================== HARDWARE CALCULATOR DRAWER (FOOLPROOF INPUT) ======================== */
+.sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  background: var(--sheet-backdrop);
+  backdrop-filter: blur(3px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+  z-index: 90;
+}
+
+.sheet-backdrop.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.calc-sheet {
+  position: fixed;
+  left: 50%;
+  bottom: 0;
+  transform: translate(-50%, 105%);
+  width: 100%;
+  max-width: 460px;
+  background: var(--chassis-bg);
+  background-image: radial-gradient(var(--chassis-dot) 1.15px, transparent 1.15px);
+  background-size: 16px 16px;
+  border-top: 2px solid var(--border-strong);
+  border-left: 2px solid var(--border-strong);
+  border-right: 2px solid var(--border-strong);
+  border-radius: 28px 28px 0 0;
+  padding: 12px 14px calc(env(safe-area-inset-bottom, 0px) + 14px);
+  z-index: 100;
+  transition: transform 0.26s cubic-bezier(0.22, 1, 0.36, 1);
+  box-shadow: 0 -14px 40px rgba(0, 0, 0, 0.24);
+  max-height: 94dvh;
+  overflow-y: auto;
+}
+
+.calc-sheet.open {
+  transform: translate(-50%, 0);
+}
+
+.sheet-grabber {
+  width: 42px;
+  height: 5px;
+  background: var(--border-strong);
+  border-radius: 99px;
+  margin: 0 auto 10px;
+}
+
+.calc-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.calc-cat-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  background: var(--surface-card);
+  border: 1.5px solid var(--border-ink);
+  padding: 5px 12px 5px 6px;
+  border-radius: 999px;
+  box-shadow: 0 2px 0 var(--keycap-lip);
+}
+
+.calc-cat-dot {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+}
+
+.calc-cat-dot svg {
+  width: 18px;
+  height: 18px;
+}
+
+.calc-cat-name {
+  font-size: 0.95rem;
+  font-weight: 900;
+}
+
+.calc-date-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.date-chip-input {
+  background: var(--surface-card);
+  color: var(--ink-primary);
+  border: 1.5px solid var(--border-ink);
+  border-radius: 10px;
+  padding: 6px 8px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  box-shadow: 0 2px 0 var(--keycap-lip);
+}
+
+.close-sheet-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border-ink);
+  background: var(--surface-card);
+  color: var(--ink-secondary);
+  font-size: 1rem;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+/* Calculator LCD Display inside Sheet */
+.calc-lcd-box {
+  background: var(--lcd-bg);
+  border: 2px solid var(--lcd-border);
+  border-radius: 16px;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.11);
+}
+
+.calc-lcd-upper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 24px;
+}
+
+.currency-select-pill {
+  background: rgba(0, 0, 0, 0.09);
+  color: var(--lcd-ink);
+  border: 1px solid var(--lcd-border);
+  border-radius: 8px;
+  padding: 3px 8px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+[data-skin="opdark"] .currency-select-pill {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.calc-expr-preview {
+  font-size: 0.82rem;
+  color: var(--lcd-sub);
+  font-weight: 700;
+  text-align: right;
+  flex: 1;
+}
+
+.calc-lcd-digits {
+  font-size: 2.25rem;
+  font-weight: 800;
+  color: var(--lcd-ink);
+  text-align: right;
+  line-height: 1.12;
+  margin-top: 2px;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+.fx-live-bar {
+  margin-top: 7px;
+  padding-top: 6px;
+  border-top: 1px dashed var(--lcd-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  font-size: 0.76rem;
+  font-weight: 800;
+  color: var(--lcd-sub);
+  flex-wrap: wrap;
+}
+
+.fx-rate-edit-btn {
+  background: rgba(0, 0, 0, 0.07);
+  border: 1px solid var(--lcd-border);
+  color: var(--lcd-ink);
+  border-radius: 6px;
+  padding: 2px 7px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.fx-fee-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  padding: 2px 7px;
+  border-radius: 6px;
+  border: 1px solid var(--lcd-border);
+  font-size: 0.71rem;
+}
+
+.fx-fee-toggle.active {
+  background: var(--signal-accent);
+  color: #fff;
+  border-color: var(--signal-accent);
+}
+
+/* Zero-Typing Quick Sub-Tags + Note */
+.quick-tags-strip {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+  margin-bottom: 6px;
+  scrollbar-width: none;
+}
+.quick-tags-strip::-webkit-scrollbar { display: none; }
+
+.subtag-chip {
+  border: 1.5px solid var(--border-ink);
+  background: var(--surface-card);
+  color: var(--ink-primary);
+  font-size: 0.8rem;
+  font-weight: 800;
+  padding: 5px 11px;
+  border-radius: 999px;
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow: 0 2px 0 var(--keycap-lip);
+  transition: all 0.1s ease;
+}
+
+.subtag-chip.selected {
+  background: var(--ink-primary);
+  color: var(--surface-card);
+  border-color: var(--ink-primary);
+}
+
+.note-and-split-row {
+  display: flex;
+  gap: 7px;
+  margin-bottom: 8px;
+}
+
+.note-input {
+  flex: 1;
+  background: var(--surface-card);
+  color: var(--ink-primary);
+  border: 1.5px solid var(--border-ink);
+  border-radius: 11px;
+  padding: 8px 11px;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.note-input::placeholder {
+  color: var(--ink-muted);
+}
+
+.split-toggle-btn {
+  border: 1.5px solid var(--border-ink);
+  background: var(--surface-card);
+  color: var(--ink-secondary);
+  border-radius: 11px;
+  padding: 0 11px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow: 0 2px 0 var(--keycap-lip);
+}
+
+.split-toggle-btn.active {
+  background: var(--signal-accent);
+  color: #fff;
+  border-color: var(--signal-accent);
+}
+
+/* AA Split Drawer Option Row */
+.split-config-panel {
+  display: none;
+  background: var(--surface-card);
+  border: 1.5px solid var(--border-ink);
+  border-radius: 12px;
+  padding: 8px 10px;
+  margin-bottom: 8px;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.split-config-panel.show {
+  display: flex;
+}
+
+.mini-pill {
+  border: 1.5px solid var(--border-ink);
+  background: var(--surface-sunken);
+  color: var(--ink-primary);
+  border-radius: 8px;
+  padding: 4px 9px;
+  font-size: 0.76rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.mini-pill.active {
+  background: var(--ink-primary);
+  color: var(--surface-card);
+}
+
+/* Payment Method Pills */
+.pay-method-strip {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  margin-bottom: 4px;
+  scrollbar-width: none;
+}
+.pay-method-strip::-webkit-scrollbar { display: none; }
+
+.pay-pill {
+  border: 1.5px solid var(--border-ink);
+  background: var(--surface-card);
+  color: var(--ink-secondary);
+  font-size: 0.76rem;
+  font-weight: 800;
+  padding: 5px 10px;
+  border-radius: 10px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.pay-pill.active {
+  border-color: var(--signal-accent);
+  background: var(--signal-accent);
+  color: #fff;
+}
+
+/* Mechanical 4x4 + Submit Tactile Keypad */
+.numpad-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.num-key {
+  height: 52px;
+  border-radius: 14px;
+  border: 1.5px solid var(--border-ink);
+  background: var(--numpad-key);
+  color: var(--ink-primary);
+  font-size: 1.32rem;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 4px 0 var(--keycap-lip);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.06s ease, box-shadow 0.06s ease;
+}
+
+.num-key.op-key {
+  background: var(--numpad-op);
+  color: var(--signal-accent);
+  font-size: 1.25rem;
+}
+
+.num-key:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 var(--keycap-lip);
+}
+
+.submit-save-btn {
+  margin-top: 9px;
+  width: 100%;
+  height: 54px;
+  border-radius: 16px;
+  border: none;
+  background: var(--signal-accent);
+  color: #FFFFFF;
+  font-size: 1.08rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  box-shadow: 0 5px 0 var(--signal-accent-lip), 0 8px 18px rgba(226, 85, 45, 0.25);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+}
+
+.submit-save-btn:active {
+  transform: translateY(4px);
+  box-shadow: 0 1px 0 var(--signal-accent-lip);
+}
+
+/* ======================== THERMAL RECEIPT TIMELINE (明細) ======================== */
+.section-card {
+  background: var(--surface-card);
+  border: 1.5px solid var(--border-ink);
+  border-radius: 20px;
+  padding: 15px;
+  margin-bottom: 13px;
+  box-shadow: 0 4px 0 var(--keycap-lip);
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.section-title {
+  font-size: 1rem;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.filter-bar {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  margin-bottom: 10px;
+  scrollbar-width: none;
+}
+.filter-bar::-webkit-scrollbar { display: none; }
+
+.receipt-day-group {
+  background: var(--surface-card);
+  border: 1.5px solid var(--border-ink);
+  border-radius: 18px;
+  margin-bottom: 12px;
+  box-shadow: 0 4px 0 var(--keycap-lip);
+  overflow: hidden;
+}
+
+.receipt-day-head {
+  background: var(--surface-sunken);
+  padding: 9px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: var(--ink-secondary);
+  border-bottom: 1.5px dashed var(--border-ink);
+}
+
+.tx-row {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border-ink);
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+
+.tx-row:last-child {
+  border-bottom: none;
+}
+
+.tx-row:active {
+  background: var(--surface-sunken);
+}
+
+.tx-icon-circle {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.tx-icon-circle svg {
+  width: 22px;
+  height: 22px;
+}
+
+.tx-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.tx-title-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.94rem;
+  font-weight: 800;
+  color: var(--ink-primary);
+}
+
+.tx-meta-line {
+  font-size: 0.74rem;
+  color: var(--ink-muted);
+  font-weight: 700;
+  margin-top: 2px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.tx-tag-mini {
+  background: var(--surface-sunken);
+  color: var(--ink-secondary);
+  padding: 1px 6px;
+  border-radius: 5px;
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.tx-tag-mini.aa {
+  background: rgba(226, 85, 45, 0.14);
+  color: var(--signal-accent);
+}
+
+.tx-amount-col {
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.tx-twd-val {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--ink-primary);
+}
+
+.tx-twd-val.income {
+  color: var(--jade-income);
+}
+
+.tx-fx-orig {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--ink-muted);
+}
+
+/* ======================== CHARTS & AA SPLIT SETTLEMENT ======================== */
+.donut-layout {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.donut-svg-wrap {
+  width: 132px;
+  height: 132px;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.donut-center-label {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  pointer-events: none;
+}
+
+.cat-rank-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cat-rank-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cat-rank-top {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.cat-rank-bar {
+  height: 8px;
+  background: var(--surface-sunken);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.cat-rank-fill {
+  height: 100%;
+  border-radius: 99px;
+}
+
+/* ======================== QUICK PRESETS & MODALS ======================== */
+.preset-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 9px;
+}
+
+.preset-btn {
+  background: var(--surface-card);
+  border: 1.5px solid var(--border-ink);
+  border-radius: 15px;
+  padding: 11px 12px;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: 0 3px 0 var(--keycap-lip);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.preset-btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 var(--keycap-lip);
+}
+
+.action-btn {
+  border: 1.5px solid var(--border-ink);
+  background: var(--surface-card);
+  color: var(--ink-primary);
+  border-radius: 13px;
+  padding: 10px 14px;
+  font-size: 0.86rem;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 3px 0 var(--keycap-lip);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.action-btn.primary {
+  background: var(--signal-accent);
+  color: #fff;
+  border-color: var(--signal-accent);
+  box-shadow: 0 3px 0 var(--signal-accent-lip);
+}
+
+.action-btn:active {
+  transform: translateY(2px);
+  box-shadow: none;
+}
+
+/* Toast Notification */
+.toast-banner {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 14px);
+  left: 50%;
+  transform: translate(-50%, -140%);
+  background: var(--ink-primary);
+  color: var(--surface-card);
+  padding: 10px 18px;
+  border-radius: 999px;
+  font-size: 0.86rem;
+  font-weight: 800;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.24);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+  white-space: nowrap;
+}
+
+.toast-banner.show {
+  transform: translate(-50%, 0);
+}
+
+.toast-undo-btn {
+  background: var(--signal-accent);
+  color: #fff;
+  border: none;
+  border-radius: 99px;
+  padding: 3px 9px;
+  font-size: 0.75rem;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 32px 16px;
+  color: var(--ink-muted);
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+/* ======================== INTERACTIVE CALENDAR VIEW (收支月曆) ======================== */
+.subview-tabs {
+  display: inline-flex;
+  background: var(--surface-sunken);
+  border: 1.5px solid var(--border-ink);
+  border-radius: 12px;
+  padding: 3px;
+  gap: 3px;
+}
+
+.subview-tab {
+  border: none;
+  background: transparent;
+  color: var(--ink-secondary);
+  font-size: 0.78rem;
+  font-weight: 800;
+  padding: 5px 12px;
+  border-radius: 9px;
+  cursor: pointer;
+}
+
+.subview-tab.active {
+  background: var(--surface-card);
+  color: var(--ink-primary);
+  box-shadow: 0 2px 0 var(--keycap-lip);
+}
+
+.cal-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  text-align: center;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: var(--ink-muted);
+  margin-bottom: 6px;
+}
+
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.cal-cell {
+  min-height: 52px;
+  background: var(--surface-card);
+  border: 1px solid var(--border-ink);
+  border-radius: 10px;
+  padding: 4px 2px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: all 0.1s ease;
+}
+
+.cal-cell.empty {
+  background: transparent;
+  border-color: transparent;
+  pointer-events: none;
+}
+
+.cal-cell.today {
+  border: 2px solid var(--signal-accent);
+}
+
+.cal-cell.selected {
+  background: var(--ink-primary);
+  color: var(--surface-card);
+}
+
+.cal-day-num {
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.cal-day-amt {
+  font-size: 0.62rem;
+  font-weight: 800;
+  color: var(--signal-accent);
+  line-height: 1.1;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cal-cell.selected .cal-day-amt {
+  color: var(--badge-gold);
+}
+
+.cal-day-inc {
+  font-size: 0.6rem;
+  font-weight: 800;
+  color: var(--jade-income);
+  line-height: 1;
+}
+
+/* ======================== SEARCH & MULTI-ACCOUNTS & MODALS ======================== */
+.search-input-wrap {
+  display: flex;
+  gap: 7px;
+  margin-bottom: 10px;
+}
+
+.search-box {
+  flex: 1;
+  background: var(--surface-card);
+  color: var(--ink-primary);
+  border: 1.5px solid var(--border-ink);
+  border-radius: 12px;
+  padding: 8px 12px;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.account-list {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.account-row-card {
+  background: var(--surface-sunken);
+  border: 1.5px solid var(--border-ink);
+  border-radius: 14px;
+  padding: 11px 13px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.acc-badge-type {
+  font-size: 0.68rem;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: var(--surface-card);
+  color: var(--ink-secondary);
+  border: 1px solid var(--border-ink);
+}
+
+/* Daily Trend Bar Chart */
+.trend-bars-wrap {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 92px;
+  padding: 10px 4px 0;
+  border-bottom: 1.5px solid var(--border-ink);
+  overflow-x: auto;
+}
+
+.trend-bar-col {
+  flex: 1;
+  min-width: 11px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 3px;
+}
+
+.trend-bar-stick {
+  width: 100%;
+  max-width: 14px;
+  background: var(--signal-accent);
+  border-radius: 4px 4px 0 0;
+  min-height: 2px;
+  transition: height 0.25s ease;
+}
+
+.trend-bar-lbl {
+  font-size: 0.58rem;
+  font-weight: 700;
+  color: var(--ink-muted);
+}
+
+/* Center Modal Sheet for Quick Presets / Ledgers / Invoice / Transfer / Custom Category */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--sheet-backdrop);
+  backdrop-filter: blur(3px);
+  display: none;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 120;
+  padding: 0;
+}
+
+.modal-overlay.open {
+  display: flex;
+}
+
+.modal-card {
+  width: 100%;
+  max-width: 460px;
+  max-height: 88dvh;
+  overflow-y: auto;
+  background: var(--chassis-bg);
+  background-image: radial-gradient(var(--chassis-dot) 1.15px, transparent 1.15px);
+  background-size: 16px 16px;
+  border-top: 2px solid var(--border-strong);
+  border-left: 2px solid var(--border-strong);
+  border-right: 2px solid var(--border-strong);
+  border-radius: 26px 26px 0 0;
+  padding: 16px 16px calc(env(safe-area-inset-bottom, 0px) + 20px);
+  box-shadow: 0 -12px 36px rgba(0, 0, 0, 0.24);
+  animation: slideSheetIn 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes slideSheetIn {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 11px;
+}
+
+.form-field label {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: var(--ink-secondary);
+}
+
+.form-input, .form-select {
+  background: var(--surface-card);
+  color: var(--ink-primary);
+  border: 1.5px solid var(--border-ink);
+  border-radius: 12px;
+  padding: 9px 12px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  width: 100%;
+}
+
+.extra-tools-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.micro-tool-btn {
+  border: 1.5px dashed var(--border-strong);
+  background: var(--surface-card);
+  color: var(--ink-secondary);
+  border-radius: 9px;
+  padding: 4px 9px;
+  font-size: 0.74rem;
+  font-weight: 800;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.receipt-thumb-preview {
+  width: 34px;
+  height: 34px;
+  border-radius: 7px;
+  object-fit: cover;
+  border: 1.5px solid var(--border-strong);
+}
+
+.color-swatch-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.color-swatch {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2.5px solid transparent;
+  cursor: pointer;
+}
+
+.color-swatch.selected {
+  border-color: var(--ink-primary);
+  transform: scale(1.12);
+}

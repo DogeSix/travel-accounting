@@ -72,6 +72,12 @@
         </div>
         <div class="budget-fuel-text num-mono" id="budgetFuelText">設定預算 ✎</div>
       </div>
+
+      <!-- Live Linked Account Balance Strip (Instantly reflects every daily expense!) -->
+      <div id="lcdLiveAccountStrip" onclick="HaojiApp.switchView('accounts')" title="點擊查看各帳戶扣款明細與設定餘額" style="margin-top:8px;padding-top:7px;border-top:1px dashed var(--lcd-border);display:flex;justify-content:space-between;align-items:center;font-size:0.73rem;font-weight:800;color:var(--lcd-sub);cursor:pointer;gap:6px;flex-wrap:wrap;">
+        <span class="num-mono" id="lcdLiveNetWorth">淨資產 NT$ 0</span>
+        <span class="num-mono" id="lcdLiveQuickAcc">現金 $0｜卡費 $0 ›</span>
+      </div>
     </section>
 
     <!-- ==================== VIEW 1: 九宮格極簡傻瓜記帳 ==================== -->
@@ -228,12 +234,15 @@
     <section id="view-accounts" class="view-panel">
       <!-- Net Worth & Accounts -->
       <div class="section-card">
-        <div class="section-header">
+        <div class="section-header" style="flex-wrap:wrap;gap:8px;">
           <div>
-            <div class="section-title">總淨資產與帳戶餘額</div>
-            <div style="font-size:0.73rem;color:var(--ink-muted);font-weight:700;">記帳與轉帳自動連動各帳戶餘額</div>
+            <div class="section-title">總淨資產與帳戶餘額（自動連動消費）</div>
+            <div style="font-size:0.73rem;color:var(--ink-muted);font-weight:700;">每記一筆日常消費，自動從所選支付帳戶扣款；刷信用卡則自動累計待繳卡費</div>
           </div>
-          <button type="button" class="density-toggle-btn" onclick="HaojiApp.openAddAccountModal()">＋新增帳戶</button>
+          <div style="display:flex;gap:6px;">
+            <button type="button" class="density-toggle-btn" onclick="HaojiApp.zeroAllAccountsPrompt()" title="將所有帳戶起始金額歸零">歸零重設</button>
+            <button type="button" class="density-toggle-btn" onclick="HaojiApp.openAddAccountModal()">＋新增帳戶</button>
+          </div>
         </div>
         <div style="background:var(--lcd-bg);border:2px solid var(--lcd-border);border-radius:14px;padding:11px 13px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:baseline;">
           <span style="font-size:0.8rem;font-weight:800;color:var(--lcd-sub);">目前淨資產總計</span>
@@ -386,7 +395,7 @@
     <!-- Optional Extra Micro Tools: Invoice 3-digits + Photo Receipt + Delete when editing -->
     <div class="extra-tools-strip">
       <div style="display:flex;align-items:center;gap:6px;">
-        <input type="tel" maxlength="3" id="calcInvoiceInput" class="date-chip-input num-mono" placeholder="發票末3碼" style="width:88px;padding:4px 8px;font-size:0.74rem;" />
+        <input type="tel" maxlength="3" id="calcInvoiceInput" class="date-chip-input num-mono" placeholder="發票末3碼" style="width:112px;padding:5px 8px;" />
         <label class="micro-tool-btn" style="margin:0;">
           <span>📷 收據照</span>
           <input type="file" id="calcPhotoInput" accept="image/*" style="display:none;" onchange="HaojiApp.handleReceiptPhoto(event)" />

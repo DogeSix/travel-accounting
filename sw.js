@@ -1,4 +1,4 @@
-const CACHE_NAME = 'haoji-grid-pwa-v1';
+const CACHE_NAME = 'haoji-grid-pwa-v3';
 const ASSETS = [
   './',
   './index.html',

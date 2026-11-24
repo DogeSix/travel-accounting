@@ -207,11 +207,47 @@ const HaojiApp = (() => {
     ];
   }
 
+  function buildZeroedAccounts(currency = 'TWD') {
+    if (currency !== 'TWD') {
+      return [
+        { id: 'acc_fx_cash', name: '外幣現金袋', kind: 'asset', initBalance: 0 },
+        { id: 'acc_card', name: '信用卡', kind: 'credit', initBalance: 0 },
+        { id: 'acc_iccard', name: '交通卡 / Suica', kind: 'asset', initBalance: 0 },
+        { id: 'acc_bank', name: '銀行存款', kind: 'asset', initBalance: 0 }
+      ];
+    }
+    return [
+      { id: 'acc_cash', name: '錢包現金', kind: 'asset', initBalance: 0 },
+      { id: 'acc_card', name: '信用卡', kind: 'credit', initBalance: 0 },
+      { id: 'acc_linepay', name: 'LINE Pay / 電支', kind: 'asset', initBalance: 0 },
+      { id: 'acc_bank', name: '銀行存款', kind: 'asset', initBalance: 0 },
+      { id: 'acc_iccard', name: '悠遊卡 / 交通卡', kind: 'asset', initBalance: 0 }
+    ];
+  }
+
+  function ensurePerLedgerAccounts(targetState) {
+    if (!targetState || !Array.isArray(targetState.ledgers)) return;
+    const legacyTwAccounts = Array.isArray(targetState.accounts) && targetState.accounts.length
+      ? targetState.accounts
+      : DEFAULT_ACCOUNTS;
+
+    targetState.ledgers.forEach(l => {
+      if (!Array.isArray(l.accounts) || l.accounts.length === 0) {
+        if (l.id === 'led_tw') {
+          l.accounts = JSON.parse(JSON.stringify(legacyTwAccounts));
+        } else {
+          // Every project / travel ledger starts cleanly with $0 accounts!
+          l.accounts = buildZeroedAccounts(l.defaultCurrency || 'TWD');
+        }
+      }
+    });
+  }
+
   function getDefaultState() {
     const rates = {};
     Object.keys(CURRENCIES).forEach(k => { rates[k] = CURRENCIES[k].rateToTwd; });
-    return {
-      version: 1,
+    const s = {
+      version: 2,
       settings: {
         skin: 'braun',
         gridCols: 3, // 3 = 九宮格 3x3, 2 = 超大按鈕 2x2
@@ -224,13 +260,12 @@ const HaojiApp = (() => {
         lastRateSync: null
       },
       ledgers: [
-        { id: 'led_tw', name: '🇹🇼 台灣日常帳本', defaultCurrency: 'TWD', budgetTwd: 25000 },
-        { id: 'led_jp', name: '🇯🇵 日本東京旅帳', defaultCurrency: 'JPY', budgetTwd: 45000 },
-        { id: 'led_kr', name: '🇰🇷 韓國首爾旅帳', defaultCurrency: 'KRW', budgetTwd: 35000 }
+        { id: 'led_tw', name: '🇹🇼 台灣日常帳本', defaultCurrency: 'TWD', budgetTwd: 25000, accounts: JSON.parse(JSON.stringify(DEFAULT_ACCOUNTS)) },
+        { id: 'led_jp', name: '🇯🇵 日本東京旅帳', defaultCurrency: 'JPY', budgetTwd: 45000, accounts: buildZeroedAccounts('JPY') },
+        { id: 'led_kr', name: '🇰🇷 韓國首爾旅帳', defaultCurrency: 'KRW', budgetTwd: 35000, accounts: buildZeroedAccounts('KRW') }
       ],
       expenseCats: JSON.parse(JSON.stringify(DEFAULT_EXPENSE_CATS)),
       incomeCats: JSON.parse(JSON.stringify(DEFAULT_INCOME_CATS)),
-      accounts: JSON.parse(JSON.stringify(DEFAULT_ACCOUNTS)),
       presets: [
         { id: 'p1', title: '超商冰拿鐵', catId: 'c_drink', amount: 55, currency: 'TWD', accountId: 'acc_linepay' },
         { id: 'p2', title: '美味早餐', catId: 'c_food', amount: 75, currency: 'TWD', accountId: 'acc_cash' },
@@ -246,6 +281,8 @@ const HaojiApp = (() => {
       ],
       transactions: buildSampleTransactions()
     };
+    ensurePerLedgerAccounts(s);
+    return s;
   }
 
   function loadState() {
@@ -257,6 +294,8 @@ const HaojiApp = (() => {
         state = Object.assign(def, parsed);
         state.settings = Object.assign(def.settings, parsed.settings || {});
         state.settings.rates = Object.assign(def.settings.rates, (parsed.settings && parsed.settings.rates) || {});
+        ensurePerLedgerAccounts(state);
+        saveState();
         return;
       }
     } catch (e) {
@@ -315,8 +354,20 @@ const HaojiApp = (() => {
     );
   }
 
-  function getAccountById(accId) {
-    return state.accounts.find(a => a.id === accId) || state.accounts[0] || { id: 'acc_cash', name: '現金', kind: 'asset', initBalance: 0 };
+  function getActiveAccounts() {
+    const ledger = getActiveLedger();
+    if (!Array.isArray(ledger.accounts) || ledger.accounts.length === 0) {
+      ledger.accounts = buildZeroedAccounts(ledger.defaultCurrency || 'TWD');
+    }
+    return ledger.accounts;
+  }
+
+  function getAccountById(accId, ledgerId = null) {
+    const targetLedger = ledgerId ? (state.ledgers.find(l => l.id === ledgerId) || getActiveLedger()) : getActiveLedger();
+    const list = (targetLedger && Array.isArray(targetLedger.accounts) && targetLedger.accounts.length)
+      ? targetLedger.accounts
+      : getActiveAccounts();
+    return list.find(a => a.id === accId) || list[0] || { id: 'acc_cash', name: '現金', kind: 'asset', initBalance: 0 };
   }
 
   function getSvg(iconKey) {
@@ -496,6 +547,31 @@ const HaojiApp = (() => {
       textEl.textContent = '點擊設定預算 ✎';
       safeEl.textContent = '設定月預算 ✎';
     }
+
+    // Live Net Worth & Default Payment Account Balance right on Home LCD (Scoped to Active Ledger!)
+    const activeAccounts = getActiveAccounts();
+    const balances = computeAccountBalances();
+    let netWorth = 0;
+    let totalCardDebt = 0;
+    activeAccounts.forEach(a => {
+      const b = balances[a.id] || 0;
+      netWorth += b;
+      if (a.kind === 'credit' && b < 0) totalCardDebt += Math.abs(b);
+    });
+    const fallbackAccId = (activeAccounts[0] && activeAccounts[0].id) || 'acc_cash';
+    const prefAccId = (state.settings.lastAccountId && activeAccounts.some(a => a.id === state.settings.lastAccountId))
+      ? state.settings.lastAccountId
+      : fallbackAccId;
+    const prefAcc = getAccountById(prefAccId);
+    const prefBal = balances[prefAcc.id] || 0;
+
+    const nwEl = document.getElementById('lcdLiveNetWorth');
+    const qaEl = document.getElementById('lcdLiveQuickAcc');
+    if (nwEl) nwEl.textContent = `淨資產 ${netWorth < 0 ? '-' : ''}NT$${fmtNum(Math.abs(netWorth))}`;
+    if (qaEl) {
+      const cardPart = totalCardDebt > 0 ? `｜待繳卡費 -$${fmtNum(totalCardDebt)}` : '';
+      qaEl.textContent = `${prefAcc.name} ${prefBal < 0 ? '-' : ''}$${fmtNum(Math.abs(prefBal))}${cardPart} ›`;
+    }
   }
 
   function renderHomeGrid() {
@@ -541,6 +617,13 @@ const HaojiApp = (() => {
     const mode = ui.gridMode;
     const cat = getCategoryById(catId);
 
+    const activeAccounts = getActiveAccounts();
+    const firstAccId = (activeAccounts[0] && activeAccounts[0].id) || 'acc_cash';
+    const secondAccId = (activeAccounts[1] && activeAccounts[1].id) || firstAccId;
+    const defaultAcc = (state.settings.lastAccountId && activeAccounts.some(a => a.id === state.settings.lastAccountId))
+      ? state.settings.lastAccountId
+      : firstAccId;
+
     ui.calc = {
       open: true,
       editingTxId: null,
@@ -551,9 +634,9 @@ const HaojiApp = (() => {
       fxFee: false,
       note: '',
       selectedTag: '',
-      accountId: ledger.defaultCurrency !== 'TWD' ? 'acc_fx_cash' : 'acc_cash',
-      fromAccId: cat.fromId || 'acc_bank',
-      toAccId: cat.toId || 'acc_cash',
+      accountId: defaultAcc,
+      fromAccId: activeAccounts.some(a => a.id === cat.fromId) ? cat.fromId : firstAccId,
+      toAccId: activeAccounts.some(a => a.id === cat.toId) ? cat.toId : secondAccId,
       splitMode: 'none',
       buddy: '',
       invoice3: '',
@@ -571,6 +654,7 @@ const HaojiApp = (() => {
     populateCalcSheetUI();
     document.getElementById('calcBackdrop').classList.add('open');
     document.getElementById('calcSheet').classList.add('open');
+    if (document.body && document.body.classList) document.body.classList.add('sheet-locked');
   }
 
   function openCalcToEdit(txId) {
@@ -614,6 +698,7 @@ const HaojiApp = (() => {
     populateCalcSheetUI();
     document.getElementById('calcBackdrop').classList.add('open');
     document.getElementById('calcSheet').classList.add('open');
+    if (document.body && document.body.classList) document.body.classList.add('sheet-locked');
   }
 
   function populateCalcSheetUI() {
@@ -631,7 +716,7 @@ const HaojiApp = (() => {
     document.getElementById('calcSplitToggleBtn').style.display = ui.calc.mode === 'expense' ? 'inline-block' : 'none';
 
     if (isTransfer) {
-      const opts = state.accounts.map(a => `<option value="${a.id}">${escapeHtml(a.name)}</option>`).join('');
+      const opts = getActiveAccounts().map(a => `<option value="${a.id}">${escapeHtml(a.name)}</option>`).join('');
       const fromSel = document.getElementById('transferFromSelect');
       const toSel = document.getElementById('transferToSelect');
       fromSel.innerHTML = opts;
@@ -686,11 +771,18 @@ const HaojiApp = (() => {
 
   function renderCalcAccountPills() {
     const strip = document.getElementById('calcAccountStrip');
-    strip.innerHTML = state.accounts.map(acc => `
-      <button type="button" class="pay-pill ${ui.calc.accountId === acc.id ? 'active' : ''}" onclick="HaojiApp.selectCalcAccount('${acc.id}')">
-        ${escapeHtml(acc.name)}
-      </button>
-    `).join('');
+    const balances = computeAccountBalances();
+    strip.innerHTML = getActiveAccounts().map(acc => {
+      const bal = balances[acc.id] || 0;
+      const balTag = acc.kind === 'credit'
+        ? (bal < 0 ? ` (待繳$${fmtNum(Math.abs(bal))})` : ' ($0)')
+        : ` (${bal < 0 ? '-' : ''}$${fmtNum(Math.abs(bal))})`;
+      return `
+        <button type="button" class="pay-pill num-mono ${ui.calc.accountId === acc.id ? 'active' : ''}" onclick="HaojiApp.selectCalcAccount('${acc.id}')">
+          ${escapeHtml(acc.name)}${balTag}
+        </button>
+      `;
+    }).join('');
   }
 
   function selectCalcAccount(accId) {
@@ -852,6 +944,9 @@ const HaojiApp = (() => {
     ui.calc.open = false;
     document.getElementById('calcBackdrop').classList.remove('open');
     document.getElementById('calcSheet').classList.remove('open');
+    if (document.body && document.body.classList && !document.getElementById('universalModal').classList.contains('open')) {
+      document.body.classList.remove('sheet-locked');
+    }
   }
 
   // ==================== RECEIPT PHOTO COMPRESSION ====================
@@ -948,6 +1043,10 @@ const HaojiApp = (() => {
       photoData: ui.calc.photoData
     };
 
+    if (ui.calc.mode !== 'transfer') {
+      state.settings.lastAccountId = ui.calc.accountId;
+    }
+
     if (ui.calc.editingTxId) {
       const idx = state.transactions.findIndex(t => t.id === ui.calc.editingTxId);
       if (idx >= 0) {
@@ -960,12 +1059,21 @@ const HaojiApp = (() => {
       // Sync active month to the newly recorded date so user sees it immediately
       state.settings.activeYm = dateVal.slice(0, 7);
 
+      const newBals = computeAccountBalances();
+      const usedAcc = getAccountById(record.accountId);
+      const afterBal = newBals[usedAcc.id] || 0;
+      const accHint = record.type === 'transfer'
+        ? `（${getAccountById(record.fromAccId).name}➔${getAccountById(record.toAccId).name}）`
+        : (usedAcc.kind === 'credit'
+            ? `（${usedAcc.name} 待繳 $${fmtNum(Math.abs(afterBal))}）`
+            : `（${usedAcc.name} 剩 $${fmtNum(afterBal)}）`);
+
       // Instant Invoice Prize Check if 3 digits entered!
       const winHit = invVal.length === 3 && (state.settings.winningInvoiceCodes || []).includes(invVal);
       if (winHit) {
-        showToast(`🎉 恭喜！發票末三碼 ${invVal} 對中當期獎號！`);
+        showToast(`🎉 發票 #${invVal} 中獎！${accHint}`);
       } else {
-        showToast(`✓ 已記一筆：${noteVal} NT$${fmtNum(twdAmount)}`, () => {
+        showToast(`✓ ${noteVal} NT$${fmtNum(twdAmount)}${accHint}`, () => {
           state.transactions = state.transactions.filter(t => t.id !== record.id);
           saveState();
           renderAll();
@@ -1023,7 +1131,7 @@ const HaojiApp = (() => {
   function renderHistory() {
     const monthTxs = getLedgerMonthTxs();
 
-    // Filter Bar
+    // Filter Bar (Including Active Account Filter Pill if selected!)
     const filterBar = document.getElementById('historyFilterBar');
     const filters = [
       { id: 'all', label: '全部紀錄' },
@@ -1032,9 +1140,13 @@ const HaojiApp = (() => {
       { id: 'fx', label: '外幣消費' },
       { id: 'aa', label: '分帳/待收' }
     ];
+    if (ui.historyFilter.startsWith('acc:')) {
+      const acc = getAccountById(ui.historyFilter.slice(4));
+      filters.push({ id: ui.historyFilter, label: `帳戶：${acc.name} ✕` });
+    }
     filterBar.innerHTML = filters.map(f => `
-      <button type="button" class="subtag-chip ${ui.historyFilter === f.id ? 'selected' : ''}" onclick="HaojiApp.setHistoryFilter('${f.id}')">
-        ${f.label}
+      <button type="button" class="subtag-chip ${ui.historyFilter === f.id ? 'selected' : ''}" onclick="HaojiApp.setHistoryFilter('${f.id === ui.historyFilter && f.id.startsWith('acc:') ? 'all' : f.id}')">
+        ${escapeHtml(f.label)}
       </button>
     `).join('');
 
@@ -1044,6 +1156,13 @@ const HaojiApp = (() => {
       if (ui.historyFilter === 'income' && tx.type !== 'income') return false;
       if (ui.historyFilter === 'fx' && tx.currency === 'TWD') return false;
       if (ui.historyFilter === 'aa' && (!tx.receivableTwd || tx.settled)) return false;
+      if (ui.historyFilter.startsWith('acc:')) {
+        const targetAcc = ui.historyFilter.slice(4);
+        const matchAcc = tx.type === 'transfer'
+          ? (tx.fromAccId === targetAcc || tx.toAccId === targetAcc)
+          : tx.accountId === targetAcc;
+        if (!matchAcc) return false;
+      }
       if (q) {
         const cat = getCategoryById(tx.catId);
         const hay = `${tx.note} ${cat.name} ${tx.buddy || ''} ${tx.invoice3 || ''} ${tx.currency}`.toLowerCase();
@@ -1449,47 +1568,86 @@ const HaojiApp = (() => {
   }
 
   // ==================== VIEW 4: ACCOUNTS, NET WORTH, LEDGERS & BACKUP ====================
-  function computeAccountBalances() {
-    const map = {};
-    state.accounts.forEach(a => { map[a.id] = Number(a.initBalance) || 0; });
+  function computeAccountStats() {
+    const stats = {};
+    const activeAccounts = getActiveAccounts();
+    const activeLedgerId = state.settings.activeLedgerId;
+    activeAccounts.forEach(a => {
+      const init = Number(a.initBalance) || 0;
+      stats[a.id] = { init, exp: 0, expCount: 0, inc: 0, trNet: 0, bal: init };
+    });
+    // Strictly scoped to the active ledger so each project/travel ledger has independent $0-clean balances!
     state.transactions.forEach(tx => {
-      if (tx.type === 'expense' && map[tx.accountId] !== undefined) {
-        map[tx.accountId] -= tx.twdAmount;
-      } else if (tx.type === 'income' && map[tx.accountId] !== undefined) {
-        map[tx.accountId] += tx.twdAmount;
+      if (tx.ledgerId !== activeLedgerId) return;
+      if (tx.type === 'expense' && stats[tx.accountId]) {
+        stats[tx.accountId].exp += tx.twdAmount;
+        stats[tx.accountId].expCount += 1;
+        stats[tx.accountId].bal -= tx.twdAmount;
+      } else if (tx.type === 'income' && stats[tx.accountId]) {
+        stats[tx.accountId].inc += tx.twdAmount;
+        stats[tx.accountId].bal += tx.twdAmount;
       } else if (tx.type === 'transfer') {
-        if (map[tx.fromAccId] !== undefined) map[tx.fromAccId] -= tx.twdAmount;
-        if (map[tx.toAccId] !== undefined) map[tx.toAccId] += tx.twdAmount;
+        if (stats[tx.fromAccId]) {
+          stats[tx.fromAccId].trNet -= tx.twdAmount;
+          stats[tx.fromAccId].bal -= tx.twdAmount;
+        }
+        if (stats[tx.toAccId]) {
+          stats[tx.toAccId].trNet += tx.twdAmount;
+          stats[tx.toAccId].bal += tx.twdAmount;
+        }
       }
     });
+    return stats;
+  }
+
+  function computeAccountBalances() {
+    const stats = computeAccountStats();
+    const map = {};
+    Object.keys(stats).forEach(id => { map[id] = stats[id].bal; });
     return map;
   }
 
   function renderAccountsAndLedgers() {
-    const balances = computeAccountBalances();
+    const activeAccounts = getActiveAccounts();
+    const statsMap = computeAccountStats();
     let netWorth = 0;
-    Object.keys(balances).forEach(id => { netWorth += balances[id]; });
+    Object.keys(statsMap).forEach(id => { netWorth += statsMap[id].bal; });
 
     document.getElementById('netWorthDisplay').textContent = `${netWorth < 0 ? '-' : ''}NT$ ${fmtNum(Math.abs(netWorth))}`;
 
-    document.getElementById('accountListContainer').innerHTML = state.accounts.map(acc => {
-      const bal = balances[acc.id] || 0;
+    document.getElementById('accountListContainer').innerHTML = activeAccounts.map(acc => {
+      const st = statsMap[acc.id] || { init: 0, exp: 0, expCount: 0, inc: 0, trNet: 0, bal: 0 };
+      const bal = st.bal;
       const isCredit = acc.kind === 'credit';
       const unpaid = isCredit && bal < 0 ? Math.abs(bal) : 0;
+
+      const formulaParts = [];
+      if (!isCredit || st.init !== 0) formulaParts.push(`起始 $${fmtNum(st.init)}`);
+      if (st.inc > 0) formulaParts.push(`收入 +$${fmtNum(st.inc)}`);
+      formulaParts.push(`日常消費 -$${fmtNum(st.exp)} (${st.expCount}筆)`);
+      if (st.trNet !== 0) formulaParts.push(`轉帳 ${st.trNet > 0 ? '+' : '-'}$${fmtNum(Math.abs(st.trNet))}`);
+
       return `
-        <div class="account-row-card">
-          <div onclick="HaojiApp.editAccountInit('${acc.id}')" style="cursor:pointer;flex:1;">
-            <div style="display:flex;align-items:center;gap:6px;">
-              <strong style="font-size:0.9rem;">${escapeHtml(acc.name)}</strong>
-              <span class="acc-badge-type">${isCredit ? '信用卡' : '資產帳戶'}</span>
+        <div class="account-row-card" style="flex-direction:column;align-items:stretch;gap:7px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+              <strong style="font-size:0.93rem;">${escapeHtml(acc.name)}</strong>
+              <span class="acc-badge-type">${isCredit ? '信用卡（記帳累計卡費）' : '現金/存款（記帳扣款）'}</span>
             </div>
-            <div style="font-size:0.72rem;color:var(--ink-muted);margin-top:2px;">點擊可調整初始餘額</div>
-          </div>
-          <div style="display:flex;align-items:center;gap:8px;">
-            ${unpaid > 0 ? `<button type="button" class="mini-pill" style="background:var(--signal-accent);color:#fff;border:none;" onclick="HaojiApp.payOffCreditCard('${acc.id}', ${unpaid})">一鍵繳清</button>` : ''}
-            <span class="num-mono" style="font-weight:900;font-size:0.96rem;color:${bal < 0 ? 'var(--danger-red)' : 'var(--ink-primary)'};">
+            <span class="num-mono" style="font-weight:900;font-size:1.04rem;color:${bal < 0 ? 'var(--danger-red)' : 'var(--ink-primary)'};">
               ${bal < 0 ? `-NT$${fmtNum(Math.abs(bal))}` : `NT$${fmtNum(bal)}`}
             </span>
+          </div>
+
+          <div class="num-mono" style="font-size:0.72rem;color:var(--ink-secondary);font-weight:700;">
+            ${formulaParts.join(' ｜ ')}
+          </div>
+
+          <div style="display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap;">
+            <button type="button" class="mini-pill" onclick="HaojiApp.filterByAccount('${acc.id}')">明細</button>
+            <button type="button" class="mini-pill" onclick="HaojiApp.editAccountInit('${acc.id}')">✎ 校正餘額</button>
+            ${unpaid > 0 ? `<button type="button" class="mini-pill" style="background:var(--signal-accent);color:#fff;border:none;" onclick="HaojiApp.payOffCreditCard('${acc.id}', ${unpaid})">⚡ 一鍵繳清</button>` : ''}
+            <button type="button" class="mini-pill" style="color:var(--danger-red);border-color:rgba(214,69,58,0.35);" onclick="HaojiApp.deleteAccount('${acc.id}')">刪除</button>
           </div>
         </div>
       `;
@@ -1505,20 +1663,91 @@ const HaojiApp = (() => {
 
   function editAccountInit(accId) {
     const acc = getAccountById(accId);
-    const val = prompt(`調整「${acc.name}」的初始基準餘額 (TWD)：`, String(acc.initBalance || 0));
+    const stats = computeAccountStats()[accId] || { init: 0, bal: 0 };
+    const txDelta = stats.bal - stats.init; // net change from all daily expenses/incomes/transfers
+    const promptMsg = acc.kind === 'credit'
+      ? `輸入「${acc.name}」目前實際未繳卡費金額（例如欠款 3500 請輸入 -3500，無欠款輸入 0）：`
+      : `輸入「${acc.name}」你手邊【現在實際剩餘】的金額 (TWD)：\n（之後每記一筆日常消費，都會從這個金額直接往下扣！）`;
+    const val = prompt(promptMsg, String(stats.bal));
     if (val === null) return;
-    const num = parseFloat(val);
-    if (Number.isFinite(num)) {
-      acc.initBalance = Math.round(num);
+    const targetCurrentBal = parseFloat(val);
+    if (Number.isFinite(targetCurrentBal)) {
+      acc.initBalance = Math.round(targetCurrentBal - txDelta);
       saveState();
       renderAll();
-      showToast(`已更新 ${acc.name} 初始餘額`);
+      showToast(`已校正「${acc.name}」目前餘額為 NT$${fmtNum(Math.round(targetCurrentBal))}`);
     }
+  }
+
+  function filterByAccount(accId) {
+    playTick(700);
+    ui.historyFilter = `acc:${accId}`;
+    ui.historySub = 'list';
+    switchView('history');
+    switchHistorySub('list');
+  }
+
+  function deleteAccount(accId) {
+    const accounts = getActiveAccounts();
+    if (accounts.length <= 1) {
+      showToast('每個帳本至少需保留 1 個預設帳戶（可直接點校正餘額改為 0）');
+      return;
+    }
+    const target = accounts.find(a => a.id === accId);
+    if (!target) return;
+
+    const activeLedgerId = state.settings.activeLedgerId;
+    const fallback = accounts.find(a => a.id !== accId) || accounts[0];
+    const usedTxs = state.transactions.filter(tx =>
+      tx.ledgerId === activeLedgerId &&
+      (tx.accountId === accId || tx.fromAccId === accId || tx.toAccId === accId)
+    );
+
+    const msg = usedTxs.length > 0
+      ? `確定要刪除帳戶「${target.name}」嗎？\n（此帳本內有 ${usedTxs.length} 筆紀錄使用該帳戶，刪除後將自動改掛至「${fallback.name}」）`
+      : `確定要刪除不必要的帳戶「${target.name}」嗎？`;
+    if (!confirm(msg)) return;
+
+    playTick(540);
+    const snapshotAccounts = JSON.parse(JSON.stringify(accounts));
+    const snapshotTxs = JSON.parse(JSON.stringify(state.transactions));
+
+    const ledger = getActiveLedger();
+    ledger.accounts = accounts.filter(a => a.id !== accId);
+    state.transactions.forEach(tx => {
+      if (tx.ledgerId !== activeLedgerId) return;
+      if (tx.accountId === accId) tx.accountId = fallback.id;
+      if (tx.fromAccId === accId) tx.fromAccId = fallback.id;
+      if (tx.toAccId === accId) tx.toAccId = fallback.id;
+    });
+    if (state.settings.lastAccountId === accId) {
+      state.settings.lastAccountId = fallback.id;
+    }
+
+    saveState();
+    renderAll();
+    showToast(`已刪除帳戶：${target.name}`, () => {
+      ledger.accounts = snapshotAccounts;
+      state.transactions = snapshotTxs;
+      saveState();
+      renderAll();
+    });
+  }
+
+  function zeroAllAccountsPrompt() {
+    const ledger = getActiveLedger();
+    if (!confirm(`要將「${ledger.name}」內所有帳戶的起始金額全部歸零嗎？`)) return;
+    getActiveAccounts().forEach(a => { a.initBalance = 0; });
+    saveState();
+    renderAll();
+    showToast('已將本帳本所有帳戶起始金額歸零！');
   }
 
   function payOffCreditCard(cardId, unpaidAmount) {
     playTick(840);
     const card = getAccountById(cardId);
+    const accounts = getActiveAccounts();
+    const payFrom = accounts.find(a => a.id === 'acc_bank') || accounts.find(a => a.kind !== 'credit' && a.id !== cardId) || accounts[0];
     const tx = {
       id: 'tx_' + Date.now(),
       ledgerId: state.settings.activeLedgerId,
@@ -1531,8 +1760,8 @@ const HaojiApp = (() => {
       fxFee: false,
       twdAmount: unpaidAmount,
       note: `繳清${card.name}帳單`,
-      accountId: 'acc_bank',
-      fromAccId: 'acc_bank',
+      accountId: payFrom.id,
+      fromAccId: payFrom.id,
       toAccId: cardId,
       splitMode: 'none',
       buddy: '',
@@ -1544,17 +1773,21 @@ const HaojiApp = (() => {
     state.transactions.unshift(tx);
     saveState();
     renderAll();
-    showToast(`✓ 已從銀行存款自動扣繳 NT$${fmtNum(unpaidAmount)} 卡費！`);
+    showToast(`✓ 已從「${payFrom.name}」自動扣繳 NT$${fmtNum(unpaidAmount)} 卡費！`);
   }
 
   // ==================== MODALS: PRESETS/RECURRING, LEDGERS, FX CONVERTER, BUDGET, CUSTOM CAT ====================
   function openModalWithHtml(html) {
     document.getElementById('universalModalBody').innerHTML = html;
     document.getElementById('universalModal').classList.add('open');
+    if (document.body && document.body.classList) document.body.classList.add('sheet-locked');
   }
 
   function closeModal() {
     document.getElementById('universalModal').classList.remove('open');
+    if (document.body && document.body.classList && !ui.calc.open) {
+      document.body.classList.remove('sheet-locked');
+    }
   }
 
   // 1. Instant 1-Tap Presets + Monthly Recurring Subscriptions Modal
@@ -1636,7 +1869,9 @@ const HaojiApp = (() => {
     saveState();
     closeModal();
     renderAll();
-    showToast(`⚡ 已秒記：${p.title} NT$${fmtNum(twdAmount)}`, () => {
+    const acc = getAccountById(tx.accountId);
+    const afterBal = computeAccountBalances()[acc.id] || 0;
+    showToast(`⚡ ${p.title} -$${fmtNum(twdAmount)}（${acc.name} 剩 $${fmtNum(afterBal)}）`, () => {
       state.transactions = state.transactions.filter(t => t.id !== tx.id);
       saveState();
       renderAll();
@@ -1728,17 +1963,21 @@ const HaojiApp = (() => {
       <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;">
         ${state.ledgers.map(l => `
           <div class="account-row-card" style="cursor:pointer;border-color:${l.id === state.settings.activeLedgerId ? 'var(--signal-accent)' : 'var(--border-ink)'};" onclick="HaojiApp.selectLedger('${l.id}')">
-            <div>
+            <div style="flex:1;min-width:0;">
               <strong style="font-size:0.95rem;">${escapeHtml(l.name)}</strong>
               <div style="font-size:0.74rem;color:var(--ink-secondary);">預設幣別：${l.defaultCurrency}｜預算：NT$${fmtNum(l.budgetTwd)}</div>
             </div>
-            <span style="font-weight:900;font-size:0.82rem;color:var(--signal-accent);">${l.id === state.settings.activeLedgerId ? '使用中 ●' : '切換'}</span>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="font-weight:900;font-size:0.82rem;color:var(--signal-accent);">${l.id === state.settings.activeLedgerId ? '使用中 ●' : '切換'}</span>
+              ${state.ledgers.length > 1 ? `<button type="button" class="mini-pill" style="color:var(--danger-red);border-color:rgba(214,69,58,0.35);" onclick="event.stopPropagation();HaojiApp.deleteLedger('${l.id}')">刪除</button>` : ''}
+            </div>
           </div>
         `).join('')}
       </div>
 
       <div style="border-top:1.5px dashed var(--border-ink);padding-top:12px;">
-        <div style="font-size:0.88rem;font-weight:900;margin-bottom:8px;">＋ 建立新出國旅遊／專案帳本</div>
+        <div style="font-size:0.88rem;font-weight:900;margin-bottom:4px;">＋ 建立新出國旅遊／專案帳本</div>
+        <div style="font-size:0.74rem;color:var(--ink-secondary);font-weight:700;margin-bottom:9px;">新帳本將自動配置獨立且全部歸零 ($0) 的乾淨帳戶與總淨資產！</div>
         <div class="form-field">
           <label>帳本名稱</label>
           <input type="text" id="newLedgerNameInput" class="form-input" placeholder="例如：🇹🇭 曼谷跨年自由行、🇪🇺 歐洲蜜月" />
@@ -1762,6 +2001,7 @@ const HaojiApp = (() => {
   function selectLedger(ledgerId) {
     playTick(780);
     state.settings.activeLedgerId = ledgerId;
+    state.settings.lastAccountId = null;
     saveState();
     closeModal();
     renderAll();
@@ -1778,12 +2018,40 @@ const HaojiApp = (() => {
       return;
     }
     const id = 'led_' + Date.now();
-    state.ledgers.push({ id, name, defaultCurrency: curr, budgetTwd: Math.round(budget) });
+    state.ledgers.push({
+      id,
+      name,
+      defaultCurrency: curr,
+      budgetTwd: Math.round(budget),
+      accounts: buildZeroedAccounts(curr)
+    });
     state.settings.activeLedgerId = id;
+    state.settings.lastAccountId = null;
     saveState();
     closeModal();
     renderAll();
-    showToast(`已建立新帳本：${name}`);
+    showToast(`已建立全新帳本「${name}」（淨資產與帳戶已全新歸零 $0）`);
+  }
+
+  function deleteLedger(ledgerId) {
+    if (state.ledgers.length <= 1) {
+      showToast('至少需保留 1 本帳本！');
+      return;
+    }
+    const target = state.ledgers.find(l => l.id === ledgerId);
+    if (!target) return;
+    if (!confirm(`確定要刪除帳本「${target.name}」及其內部紀錄嗎？`)) return;
+    playTick(540);
+    state.ledgers = state.ledgers.filter(l => l.id !== ledgerId);
+    state.transactions = state.transactions.filter(t => t.ledgerId !== ledgerId);
+    if (state.settings.activeLedgerId === ledgerId) {
+      state.settings.activeLedgerId = state.ledgers[0].id;
+      state.settings.lastAccountId = null;
+    }
+    saveState();
+    openLedgerModal();
+    renderAll();
+    showToast(`已刪除帳本：${target.name}`);
   }
 
   // 3. Travel Instant FX + Tax-Free (-8% / -10%) Calculator Modal
@@ -1936,13 +2204,13 @@ const HaojiApp = (() => {
     showToast(`已新增九宮格按鈕：${name}`);
   }
 
-  // 6. Add New Account Modal
+  // 6. Add New Account Modal (Scoped to Current Active Ledger)
   function openAddAccountModal() {
     const name = prompt('新增支付／資產帳戶名稱（例如：國泰CUBE卡、玉山熊本熊卡、PayPay）：');
     if (!name || !name.trim()) return;
     const isCard = confirm('這是一張「信用卡（先消費後繳款）」嗎？\n按「確定」設為信用卡，按「取消」設為一般現金/存款帳戶。');
-    const init = isCard ? 0 : (parseFloat(prompt('請輸入目前初始餘額 (台幣)：', '0')) || 0);
-    state.accounts.push({
+    const init = isCard ? 0 : (parseFloat(prompt('請輸入目前初始餘額 (台幣，預設 0)：', '0')) || 0);
+    getActiveAccounts().push({
       id: 'acc_' + Date.now(),
       name: name.trim(),
       kind: isCard ? 'credit' : 'asset',
@@ -1950,7 +2218,7 @@ const HaojiApp = (() => {
     });
     saveState();
     renderAll();
-    showToast(`已新增帳戶：${name.trim()}`);
+    showToast(`已在此帳本新增帳戶：${name.trim()}`);
   }
 
   // ==================== BACKUP, EXCEL CSV EXPORT, SHARE & DEMO ====================
@@ -1963,8 +2231,8 @@ const HaojiApp = (() => {
       const l = state.ledgers.find(x => x.id === tx.ledgerId);
       const cat = getCategoryById(tx.catId);
       const acc = tx.type === 'transfer'
-        ? `${getAccountById(tx.fromAccId).name}->${getAccountById(tx.toAccId).name}`
-        : getAccountById(tx.accountId).name;
+        ? `${getAccountById(tx.fromAccId, tx.ledgerId).name}->${getAccountById(tx.toAccId, tx.ledgerId).name}`
+        : getAccountById(tx.accountId, tx.ledgerId).name;
       rows.push([
         l ? l.name : '',
         tx.date,
@@ -2004,6 +2272,7 @@ const HaojiApp = (() => {
         const parsed = JSON.parse(e.target.result);
         if (!parsed || !Array.isArray(parsed.transactions)) throw new Error('Invalid format');
         state = Object.assign(getDefaultState(), parsed);
+        ensurePerLedgerAccounts(state);
         saveState();
         applySkin();
         renderAll();
@@ -2211,6 +2480,9 @@ const HaojiApp = (() => {
     settleBuddy,
     copyLineSplitSummary,
     editAccountInit,
+    deleteAccount,
+    filterByAccount,
+    zeroAllAccountsPrompt,
     payOffCreditCard,
     openPresetsModal,
     firePreset,
@@ -2220,6 +2492,7 @@ const HaojiApp = (() => {
     openLedgerModal,
     selectLedger,
     createLedger,
+    deleteLedger,
     openFxConverterModal,
     recalcFxModal,
     recordFromFxModal,

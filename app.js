@@ -648,6 +648,7 @@ const HaojiApp = (() => {
     document.getElementById('splitBuddyInput').value = '';
     document.getElementById('calcInvoiceInput').value = '';
     document.getElementById('calcPhotoPreview').style.display = 'none';
+    document.getElementById('calcPhotoRemoveBtn').style.display = 'none';
     document.getElementById('calcDeleteBtn').style.display = 'none';
     document.getElementById('calcSplitPanel').classList.remove('show');
 
@@ -686,11 +687,14 @@ const HaojiApp = (() => {
     document.getElementById('splitBuddyInput').value = tx.buddy || '';
     document.getElementById('calcInvoiceInput').value = tx.invoice3 || '';
     const imgEl = document.getElementById('calcPhotoPreview');
+    const rmPhotoBtn = document.getElementById('calcPhotoRemoveBtn');
     if (tx.photoData) {
       imgEl.src = tx.photoData;
       imgEl.style.display = 'inline-block';
+      rmPhotoBtn.style.display = 'inline-flex';
     } else {
       imgEl.style.display = 'none';
+      rmPhotoBtn.style.display = 'none';
     }
     document.getElementById('calcDeleteBtn').style.display = 'inline-flex';
     document.getElementById('calcSplitPanel').classList.toggle('show', tx.splitMode && tx.splitMode !== 'none');
@@ -713,7 +717,7 @@ const HaojiApp = (() => {
     const isTransfer = ui.calc.mode === 'transfer';
     document.getElementById('transferAccountRow').style.display = isTransfer ? 'flex' : 'none';
     document.getElementById('calcAccountStrip').style.display = isTransfer ? 'none' : 'flex';
-    document.getElementById('calcSplitToggleBtn').style.display = ui.calc.mode === 'expense' ? 'inline-block' : 'none';
+    document.getElementById('calcSplitToggleBtn').style.display = ui.calc.mode === 'expense' ? 'inline-flex' : 'none';
 
     if (isTransfer) {
       const opts = getActiveAccounts().map(a => `<option value="${a.id}">${escapeHtml(a.name)}</option>`).join('');
@@ -730,8 +734,21 @@ const HaojiApp = (() => {
     }
 
     renderCalcQuickTags(cat);
+    renderSavedBuddyChips();
     syncSplitButtons();
     updateCalcDisplay();
+  }
+
+  function cycleCalcCategory() {
+    playTick(740);
+    const list = ui.calc.mode === 'income'
+      ? state.incomeCats
+      : (ui.calc.mode === 'transfer' ? TRANSFER_TILES : state.expenseCats);
+    if (!list.length) return;
+    const idx = list.findIndex(c => c.id === ui.calc.catId);
+    const next = list[(idx + 1) % list.length];
+    ui.calc.catId = next.id;
+    populateCalcSheetUI();
   }
 
   function renderCalcQuickTags(cat) {
@@ -798,7 +815,13 @@ const HaojiApp = (() => {
   function toggleSplitPanel() {
     playTick(680);
     const panel = document.getElementById('calcSplitPanel');
-    panel.classList.toggle('show');
+    const willOpen = !panel.classList.contains('show');
+    panel.classList.toggle('show', willOpen);
+    if (willOpen && ui.calc.splitMode === 'none') {
+      // Auto-select AA平分÷2 on first open for 1-tap convenience!
+      ui.calc.splitMode = 'aa2';
+      syncSplitButtons();
+    }
   }
 
   function setSplitMode(mode) {
@@ -807,14 +830,56 @@ const HaojiApp = (() => {
     syncSplitButtons();
   }
 
+  function promptCustomSplit() {
+    const val = prompt('輸入平分總人數（例如 5 人平分請輸入 5）：', '5');
+    if (val === null) return;
+    const n = parseInt(val, 10);
+    if (n >= 2 && n <= 30) {
+      playTick(740);
+      ui.calc.splitMode = `aa${n}`;
+      syncSplitButtons();
+    } else {
+      showToast('請輸入 2～30 之間的人數');
+    }
+  }
+
+  function renderSavedBuddyChips() {
+    const box = document.getElementById('savedBuddyChips');
+    if (!box) return;
+    const names = [...new Set(state.transactions.map(t => (t.buddy || '').trim()).filter(Boolean))].slice(0, 6);
+    if (!names.length) {
+      box.innerHTML = '';
+      return;
+    }
+    box.innerHTML = names.map(n => `
+      <button type="button" class="mini-pill" onclick="HaojiApp.pickBuddyChip('${escapeAttr(n)}')">👤 ${escapeHtml(n)}</button>
+    `).join('');
+  }
+
+  function pickBuddyChip(name) {
+    playTick(700);
+    document.getElementById('splitBuddyInput').value = name;
+  }
+
   function syncSplitButtons() {
-    document.querySelectorAll('#calcSplitPanel .mini-pill').forEach(btn => {
-      btn.classList.toggle('active', btn.dataset.split === ui.calc.splitMode);
+    const mode = ui.calc.splitMode || 'none';
+    const isCustomAA = /^aa(\d+)$/.test(mode) && !['aa2', 'aa3', 'aa4'].includes(mode);
+    document.querySelectorAll('#calcSplitPanel .mini-pill[data-split]').forEach(btn => {
+      if (btn.dataset.split === 'aacustom') {
+        btn.classList.toggle('active', isCustomAA);
+        btn.textContent = isCustomAA ? `平分÷${mode.slice(2)}` : '自訂÷N';
+      } else {
+        btn.classList.toggle('active', btn.dataset.split === mode);
+      }
     });
     const toggleBtn = document.getElementById('calcSplitToggleBtn');
-    const labels = { none: '👥 分帳/代墊', aa2: '👥 AA÷2', aa3: '👥 AA÷3', aa4: '👥 AA÷4', advance: '🙋 代買100%' };
-    toggleBtn.textContent = labels[ui.calc.splitMode] || '👥 分帳/代墊';
-    toggleBtn.classList.toggle('active', ui.calc.splitMode !== 'none');
+    const txtSpan = document.getElementById('calcSplitBtnText');
+    let label = '平分・代墊';
+    if (mode === 'advance') label = '代買100%';
+    else if (/^aa(\d+)$/.test(mode)) label = `平分÷${mode.slice(2)}`;
+    if (txtSpan) txtSpan.textContent = label;
+    else toggleBtn.textContent = label;
+    toggleBtn.classList.toggle('active', mode !== 'none');
   }
 
   function setCalcYesterday() {
@@ -972,7 +1037,8 @@ const HaojiApp = (() => {
         const preview = document.getElementById('calcPhotoPreview');
         preview.src = compressed;
         preview.style.display = 'inline-block';
-        showToast('已附加壓縮收據縮圖');
+        document.getElementById('calcPhotoRemoveBtn').style.display = 'inline-flex';
+        showToast('已附加收據縮圖（點照片可放大檢視）');
       };
       img.src = e.target.result;
     };
@@ -980,9 +1046,24 @@ const HaojiApp = (() => {
     event.target.value = '';
   }
 
+  function previewReceiptPhoto() {
+    if (!ui.calc.photoData) return;
+    openModalWithHtml(`
+      <div class="sheet-grabber"></div>
+      <div class="section-header">
+        <div class="section-title">📷 收據照片檢視</div>
+        <button type="button" class="close-sheet-btn" onclick="HaojiApp.closeModal()">✕</button>
+      </div>
+      <div style="text-align:center;">
+        <img src="${ui.calc.photoData}" alt="收據大圖" style="max-width:100%;border-radius:14px;border:1.5px solid var(--border-ink);" />
+      </div>
+    `);
+  }
+
   function clearReceiptPhoto() {
     ui.calc.photoData = '';
     document.getElementById('calcPhotoPreview').style.display = 'none';
+    document.getElementById('calcPhotoRemoveBtn').style.display = 'none';
     showToast('已移除收據照片');
   }
 
@@ -1009,10 +1090,13 @@ const HaojiApp = (() => {
 
     let receivableTwd = 0;
     if (ui.calc.mode === 'expense' && ui.calc.splitMode !== 'none') {
-      if (ui.calc.splitMode === 'aa2') receivableTwd = Math.round(twdAmount / 2);
-      else if (ui.calc.splitMode === 'aa3') receivableTwd = Math.round((twdAmount * 2) / 3);
-      else if (ui.calc.splitMode === 'aa4') receivableTwd = Math.round((twdAmount * 3) / 4);
-      else if (ui.calc.splitMode === 'advance') receivableTwd = twdAmount;
+      const aaMatch = /^aa(\d+)$/.exec(ui.calc.splitMode);
+      if (aaMatch) {
+        const n = Math.max(2, parseInt(aaMatch[1], 10));
+        receivableTwd = Math.round((twdAmount * (n - 1)) / n);
+      } else if (ui.calc.splitMode === 'advance') {
+        receivableTwd = twdAmount;
+      }
     }
 
     if (ui.calc.mode === 'transfer' && ui.calc.fromAccId === ui.calc.toAccId) {
@@ -1483,7 +1567,7 @@ const HaojiApp = (() => {
     const ledgerTxs = state.transactions.filter(t => t.ledgerId === state.settings.activeLedgerId && t.receivableTwd > 0);
     const box = document.getElementById('aaSettlementContainer');
     if (!ledgerTxs.length) {
-      box.innerHTML = `<div class="empty-state" style="padding:16px;">目前帳本沒有待分帳或代墊款項<br/>記帳時點「👥 分帳/代墊」即可自動累計！</div>`;
+      box.innerHTML = `<div class="empty-state" style="padding:16px;">目前帳本沒有待分帳或代墊款項<br/>記帳時點備註旁的「平分・代墊」即可自動累計！</div>`;
       return;
     }
 
@@ -1511,7 +1595,7 @@ const HaojiApp = (() => {
           <div style="margin-top:6px;font-size:0.75rem;color:var(--ink-secondary);display:flex;flex-direction:column;gap:3px;">
             ${group.items.map(it => `
               <div style="display:flex;justify-content:space-between;opacity:${it.settled ? 0.5 : 1};">
-                <span>・${it.date.slice(5)} ${escapeHtml(it.note)} (${it.splitMode === 'advance' ? '代墊' : it.splitMode.toUpperCase()})</span>
+                <span>・${it.date.slice(5)} ${escapeHtml(it.note)} (${it.splitMode === 'advance' ? '代墊' : String(it.splitMode || '').replace(/^aa/i, '平分÷')})</span>
                 <span class="num-mono">應收 $${fmtNum(it.receivableTwd)}${it.currency !== 'TWD' ? ` (${fmtOrigCurrency(it.origAmount, it.currency)})` : ''}</span>
               </div>
             `).join('')}
@@ -1795,14 +1879,17 @@ const HaojiApp = (() => {
     playTick(740);
     const ym = state.settings.activeYm;
     const presetsHtml = state.presets.map(p => `
-      <div class="preset-btn" onclick="HaojiApp.firePreset('${p.id}')">
-        <div>
-          <div style="font-size:0.88rem;font-weight:900;">${escapeHtml(p.title)}</div>
+      <div class="preset-btn" onclick="HaojiApp.firePreset('${p.id}')" style="position:relative;">
+        <div style="min-width:0;flex:1;">
+          <div style="font-size:0.86rem;font-weight:900;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(p.title)}</div>
           <div class="num-mono" style="font-size:0.75rem;color:var(--signal-accent);font-weight:800;">
             ${fmtOrigCurrency(p.amount, p.currency)}
           </div>
         </div>
-        <span style="font-size:0.75rem;font-weight:900;background:var(--signal-accent);color:#fff;padding:3px 8px;border-radius:99px;">秒記</span>
+        <div style="display:flex;align-items:center;gap:4px;flex-shrink:0;">
+          <span style="font-size:0.72rem;font-weight:900;background:var(--signal-accent);color:#fff;padding:3px 7px;border-radius:99px;">秒記</span>
+          <button type="button" class="mini-pill" style="padding:2px 6px;color:var(--ink-muted);" title="刪除此秒記按鈕" onclick="event.stopPropagation();HaojiApp.deletePreset('${p.id}')">✕</button>
+        </div>
       </div>
     `).join('');
 
@@ -1810,13 +1897,16 @@ const HaojiApp = (() => {
       const done = (r.postedYms || []).includes(ym);
       return `
         <div class="account-row-card" style="margin-bottom:7px;">
-          <div>
+          <div style="min-width:0;flex:1;">
             <strong style="font-size:0.88rem;">${escapeHtml(r.title)}</strong>
             <div class="num-mono" style="font-size:0.75rem;color:var(--ink-secondary);">每月固定 NT$ ${fmtNum(r.amount)}</div>
           </div>
-          <button type="button" class="mini-pill" style="${done ? 'opacity:0.55;' : 'background:var(--ink-primary);color:var(--surface-card);'}" onclick="HaojiApp.postRecurring('${r.id}')">
-            ${done ? '本月已入帳 ✓' : '一鍵入帳'}
-          </button>
+          <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
+            <button type="button" class="mini-pill" style="${done ? 'opacity:0.55;' : 'background:var(--ink-primary);color:var(--surface-card);'}" onclick="HaojiApp.postRecurring('${r.id}')">
+              ${done ? '已入帳 ✓' : '一鍵入帳'}
+            </button>
+            <button type="button" class="mini-pill" style="color:var(--danger-red);" onclick="HaojiApp.deleteRecurring('${r.id}')">刪除</button>
+          </div>
         </div>
       `;
     }).join('');
@@ -1945,6 +2035,20 @@ const HaojiApp = (() => {
     });
     saveState();
     openPresetsModal();
+  }
+
+  function deletePreset(presetId) {
+    state.presets = state.presets.filter(p => p.id !== presetId);
+    saveState();
+    openPresetsModal();
+    showToast('已移除常用秒記按鈕');
+  }
+
+  function deleteRecurring(recId) {
+    state.recurring = state.recurring.filter(r => r.id !== recId);
+    saveState();
+    openPresetsModal();
+    showToast('已移除固定帳單項目');
   }
 
   // 2. Multi-Ledger Switcher & Travel Trip Creator Modal
@@ -2135,14 +2239,22 @@ const HaojiApp = (() => {
     }
   }
 
-  // 5. Custom Category Creator Modal
+  // 5. Custom Category Creator & Manager Modal
   function openCustomCatModal() {
     playTick(720);
     const swatches = ['#E56A36', '#D68934', '#DFB034', '#76A043', '#217A5D', '#4B96A4', '#4377B8', '#7E62A8', '#CE5A62', '#5C646D'];
+    const expListHtml = state.expenseCats.map(c => `
+      <span class="subtag-chip" style="display:inline-flex;align-items:center;gap:5px;">
+        <span style="width:9px;height:9px;border-radius:50%;background:${c.color};display:inline-block;"></span>
+        ${escapeHtml(c.name)}
+        ${state.expenseCats.length > 1 ? `<span style="color:var(--danger-red);padding-left:3px;" onclick="HaojiApp.deleteCategory('expense','${c.id}')">✕</span>` : ''}
+      </span>
+    `).join('');
+
     openModalWithHtml(`
       <div class="sheet-grabber"></div>
       <div class="section-header">
-        <div class="section-title">＋ 新增九宮格自訂分類按鈕</div>
+        <div class="section-title">九宮格分類新增＆管理</div>
         <button type="button" class="close-sheet-btn" onclick="HaojiApp.closeModal()">✕</button>
       </div>
       <div class="form-field">
@@ -2166,8 +2278,43 @@ const HaojiApp = (() => {
         <label>免打字常用子標籤（以逗號分隔）</label>
         <input type="text" id="customCatTags" class="form-input" placeholder="飼料罐頭, 獸醫看診, 美容洗澡" />
       </div>
-      <button type="button" class="action-btn primary" style="width:100%;" onclick="HaojiApp.saveCustomCat()">新增至九宮格面板</button>
+      <button type="button" class="action-btn primary" style="width:100%;margin-bottom:14px;" onclick="HaojiApp.saveCustomCat()">＋ 新增至九宮格面板</button>
+
+      <div style="border-top:1.5px dashed var(--border-ink);padding-top:12px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <span style="font-size:0.8rem;font-weight:900;">現有支出分類（點 ✕ 可移除）</span>
+          <button type="button" class="mini-pill" onclick="HaojiApp.restoreDefaultCats()">恢復預設九宮格</button>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;">${expListHtml}</div>
+      </div>
     `);
+  }
+
+  function deleteCategory(type, catId) {
+    const arr = type === 'income' ? state.incomeCats : state.expenseCats;
+    if (arr.length <= 1) {
+      showToast('至少需保留 1 個分類！');
+      return;
+    }
+    const target = arr.find(c => c.id === catId);
+    if (!target) return;
+    if (!confirm(`確定要從九宮格移除「${target.name}」分類嗎？`)) return;
+    if (type === 'income') state.incomeCats = state.incomeCats.filter(c => c.id !== catId);
+    else state.expenseCats = state.expenseCats.filter(c => c.id !== catId);
+    saveState();
+    openCustomCatModal();
+    renderAll();
+    showToast(`已移除分類：${target.name}`);
+  }
+
+  function restoreDefaultCats() {
+    if (!confirm('要恢復原廠預設的 9 個支出分類與 6 個收入分類嗎？')) return;
+    state.expenseCats = JSON.parse(JSON.stringify(DEFAULT_EXPENSE_CATS));
+    state.incomeCats = JSON.parse(JSON.stringify(DEFAULT_INCOME_CATS));
+    saveState();
+    closeModal();
+    renderAll();
+    showToast('已恢復預設九宮格分類！');
   }
 
   function pickSwatch(el) {
@@ -2459,18 +2606,22 @@ const HaojiApp = (() => {
     quickAddOnSelectedDate,
     openCalcForTile,
     openCalcToEdit,
+    cycleCalcCategory,
     closeCalcSheet,
     pickQuickTag,
     addQuickTagToCat,
     selectCalcAccount,
     toggleSplitPanel,
     setSplitMode,
+    promptCustomSplit,
+    pickBuddyChip,
     setCalcYesterday,
     onCalcCurrencyChange,
     toggleFxFee,
     promptCustomRate,
     pressKey,
     handleReceiptPhoto,
+    previewReceiptPhoto,
     clearReceiptPhoto,
     submitCalc,
     deleteEditingTx,
@@ -2487,8 +2638,10 @@ const HaojiApp = (() => {
     openPresetsModal,
     firePreset,
     addNewPresetPrompt,
+    deletePreset,
     postRecurring,
     addNewRecurringPrompt,
+    deleteRecurring,
     openLedgerModal,
     selectLedger,
     createLedger,
@@ -2498,6 +2651,8 @@ const HaojiApp = (() => {
     recordFromFxModal,
     openBudgetModal,
     openCustomCatModal,
+    deleteCategory,
+    restoreDefaultCats,
     pickSwatch,
     saveCustomCat,
     openAddAccountModal,

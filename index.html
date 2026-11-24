@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="好記帳" />
   <meta name="theme-color" content="#ECE8DF" id="metaThemeColor" />
@@ -106,7 +107,7 @@
         <div class="rocker-switch" role="tablist">
           <button type="button" class="rocker-btn active" data-type="expense" onclick="HaojiApp.setGridMode('expense')">支出</button>
           <button type="button" class="rocker-btn" data-type="income" onclick="HaojiApp.setGridMode('income')">收入</button>
-          <button type="button" class="rocker-btn" data-type="transfer" onclick="HaojiApp.setGridMode('transfer')">轉帳/換匯</button>
+          <button type="button" class="rocker-btn" data-type="transfer" onclick="HaojiApp.setGridMode('transfer')">轉帳</button>
         </div>
 
         <div style="display:flex;gap:6px;">
@@ -318,10 +319,11 @@
     <div class="sheet-grabber"></div>
 
     <div class="calc-header-row">
-      <div class="calc-cat-badge" id="calcCatBadge">
+      <button type="button" class="calc-cat-badge" id="calcCatBadge" onclick="HaojiApp.cycleCalcCategory()" title="點擊可快速切換分類">
         <div class="calc-cat-dot" id="calcCatDot"></div>
         <span class="calc-cat-name" id="calcCatName">餐飲美食</span>
-      </div>
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" style="flex-shrink:0;opacity:0.65;"><path d="M6 9l6 6 6-6"/></svg>
+      </button>
 
       <div class="calc-date-controls">
         <button type="button" class="mini-pill" onclick="HaojiApp.setCalcYesterday()" title="快速切換昨天">昨天</button>
@@ -332,9 +334,9 @@
 
     <!-- Transfer From -> To Selector (Only shown in Transfer Mode) -->
     <div id="transferAccountRow" style="display:none;gap:6px;align-items:center;margin-bottom:9px;">
-      <select id="transferFromSelect" class="form-select" style="padding:7px 9px;font-size:0.82rem;"></select>
-      <span style="font-weight:900;color:var(--signal-accent);">➔</span>
-      <select id="transferToSelect" class="form-select" style="padding:7px 9px;font-size:0.82rem;"></select>
+      <select id="transferFromSelect" class="form-select" style="flex:1;padding:7px 9px;"></select>
+      <span style="font-weight:900;color:var(--signal-accent);flex-shrink:0;">➔</span>
+      <select id="transferToSelect" class="form-select" style="flex:1;padding:7px 9px;"></select>
     </div>
 
     <!-- Reflective Calculator LCD Readout -->
@@ -353,6 +355,7 @@
           <option value="VND">₫ 越南盾 (VND)</option>
         </select>
         <div class="calc-expr-preview num-mono" id="calcExprPreview"></div>
+        <button type="button" class="fx-rate-edit-btn num-mono" onclick="HaojiApp.pressKey('CLEAR')" title="一鍵歸零清空金額" style="flex-shrink:0;">AC</button>
       </div>
 
       <div class="calc-lcd-digits num-mono" id="calcDigitsDisplay">0</div>
@@ -373,20 +376,25 @@
     <!-- Zero-Typing Sub-Tag Quick Chips -->
     <div class="quick-tags-strip" id="calcQuickTags"></div>
 
-    <!-- Note + AA Split Toggle -->
+    <!-- Note + AA Split Toggle (Guaranteed side-by-side grid on all iPhone widths!) -->
     <div class="note-and-split-row">
-      <input type="text" id="calcNoteInput" class="note-input" placeholder="免打字點上方標籤，或輸入備註..." />
-      <button type="button" class="split-toggle-btn" id="calcSplitToggleBtn" onclick="HaojiApp.toggleSplitPanel()">👥 分帳/代墊</button>
+      <input type="text" id="calcNoteInput" class="note-input" placeholder="點上方標籤或輸入備註..." />
+      <button type="button" class="split-toggle-btn" id="calcSplitToggleBtn" onclick="HaojiApp.toggleSplitPanel()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <span id="calcSplitBtnText">平分・代墊</span>
+      </button>
     </div>
 
     <!-- Expandable AA Split / Buddy Advance Config -->
     <div class="split-config-panel" id="calcSplitPanel">
-      <button type="button" class="mini-pill active" data-split="none" onclick="HaojiApp.setSplitMode('none')">個人消費</button>
-      <button type="button" class="mini-pill" data-split="aa2" onclick="HaojiApp.setSplitMode('aa2')">AA平分÷2</button>
-      <button type="button" class="mini-pill" data-split="aa3" onclick="HaojiApp.setSplitMode('aa3')">AA÷3</button>
-      <button type="button" class="mini-pill" data-split="aa4" onclick="HaojiApp.setSplitMode('aa4')">AA÷4</button>
-      <button type="button" class="mini-pill" data-split="advance" onclick="HaojiApp.setSplitMode('advance')">幫人代買100%</button>
-      <input type="text" id="splitBuddyInput" class="form-input" placeholder="旅伴/對象名稱（如：阿明、老婆）" style="padding:5px 9px;font-size:0.78rem;margin-top:4px;" />
+      <button type="button" class="mini-pill active" data-split="none" onclick="HaojiApp.setSplitMode('none')">個人</button>
+      <button type="button" class="mini-pill" data-split="aa2" onclick="HaojiApp.setSplitMode('aa2')">平分÷2</button>
+      <button type="button" class="mini-pill" data-split="aa3" onclick="HaojiApp.setSplitMode('aa3')">÷3</button>
+      <button type="button" class="mini-pill" data-split="aa4" onclick="HaojiApp.setSplitMode('aa4')">÷4</button>
+      <button type="button" class="mini-pill" data-split="aacustom" onclick="HaojiApp.promptCustomSplit()">自訂÷N</button>
+      <button type="button" class="mini-pill" data-split="advance" onclick="HaojiApp.setSplitMode('advance')">代買100%</button>
+      <div id="savedBuddyChips" style="width:100%;display:flex;flex-wrap:wrap;gap:5px;margin-top:2px;"></div>
+      <input type="text" id="splitBuddyInput" class="form-input" placeholder="旅伴/對象名稱（如：阿明、老婆）" style="padding:6px 10px;margin-top:2px;" />
     </div>
 
     <!-- Payment Account Strip (Hidden in Transfer Mode) -->
@@ -394,13 +402,14 @@
 
     <!-- Optional Extra Micro Tools: Invoice 3-digits + Photo Receipt + Delete when editing -->
     <div class="extra-tools-strip">
-      <div style="display:flex;align-items:center;gap:6px;">
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
         <input type="tel" maxlength="3" id="calcInvoiceInput" class="date-chip-input num-mono" placeholder="發票末3碼" style="width:112px;padding:5px 8px;" />
         <label class="micro-tool-btn" style="margin:0;">
           <span>📷 收據照</span>
           <input type="file" id="calcPhotoInput" accept="image/*" style="display:none;" onchange="HaojiApp.handleReceiptPhoto(event)" />
         </label>
-        <img id="calcPhotoPreview" class="receipt-thumb-preview" style="display:none;" alt="收據預覽" onclick="HaojiApp.clearReceiptPhoto()" title="點擊移除照片" />
+        <img id="calcPhotoPreview" class="receipt-thumb-preview" style="display:none;cursor:pointer;" alt="收據預覽" onclick="HaojiApp.previewReceiptPhoto()" title="點擊放大檢視收據" />
+        <button type="button" id="calcPhotoRemoveBtn" class="micro-tool-btn" style="display:none;color:var(--danger-red);" onclick="HaojiApp.clearReceiptPhoto()">✕移除照</button>
       </div>
       <button type="button" id="calcDeleteBtn" class="micro-tool-btn" style="display:none;color:var(--danger-red);border-color:var(--danger-red);" onclick="HaojiApp.deleteEditingTx()">刪除此筆</button>
     </div>
